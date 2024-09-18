@@ -37,10 +37,11 @@ interface Event {
   isAvailableToReg: boolean;
   clubName: string;
   eventType: string;
-  registeredUsers: string[]; // Array of registered user IDs or emails
+  registeredUsers: string[];
 }
 
 const EventsTable: React.FC<{ events: Event[] }> = ({ events }) => {
+
   return (
     <CardContent>
       <Table>
@@ -70,7 +71,7 @@ const EventsTable: React.FC<{ events: Event[] }> = ({ events }) => {
                 />
               </TableCell>
               <TableCell className="font-medium">{event.title}</TableCell>
-              <TableCell>{event.registeredUsers.length}</TableCell>
+              {/* <TableCell>{event.registeredUsers.length}</TableCell> */}
               <TableCell>{new Date(event.date).toLocaleDateString()}</TableCell>
               <TableCell>
                 <DropdownMenu>

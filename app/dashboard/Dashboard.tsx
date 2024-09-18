@@ -81,6 +81,7 @@ interface Event {
   isAvailableToReg: boolean;
   clubName: string;
   eventType: string;
+  registeredUsers: string[];
 }
 
 export const description =
