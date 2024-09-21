@@ -47,16 +47,10 @@ interface EventData {
   additionalInfo: string;
 }
 
-<<<<<<< Updated upstream
-const PROJECT_ID = process.env.NEXT_PUBLIC_PROJECT_ID || "";
-const BUCKET_ID = process.env.NEXT_PUBLIC_BUCKET_ID_EVENTS || "";
-const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT || "";
-=======
 const OWNER_ID = "66c6d9bba15522307994e4bc";
 const PROJECT_ID = '66e82a130039a555701b';
 const BUCKET_ID = '66e82bad0006fa424b7e';
->>>>>>> Stashed changes
-
+const API_ENDPOINT="https://cloud.appwrite.io/v1";
 // Initialize Appwrite client
 const client = new Client()
   .setEndpoint(API_ENDPOINT)
@@ -67,10 +61,6 @@ const storage = new Storage(client);
 const EventCreationForm: React.FC = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-<<<<<<< Updated upstream
-  const OWNER_ID = "66c6d9bba15522307994e4bc";
-=======
->>>>>>> Stashed changes
 
   const [eventData, setEventData] = useState<EventData>({
     title: "",
