@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 
 const OWNER_ID = "66c6d9bba15522307994e4bc";
-const PROJECT_ID = "66e82a130039a555701b";
-const BUCKET_ID = "66eb32070037016a5cfd";
+const PROJECT_ID = "66ee5e29002deb03acf6";
+const BUCKET_ID = "66ee5e4b001aa7d4bc64";
 
 // Initialize Appwrite client
 const client = new Client()
