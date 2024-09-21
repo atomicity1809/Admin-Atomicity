@@ -65,6 +65,17 @@ import { useRouter } from "next/navigation";
 import EventsTable from "./EventsTable";
 import { useEffect, useState } from "react";
 import * as XLSX from "xlsx"; // Import xlsx
+import { useUser } from "@clerk/nextjs";
+import {
+  ClerkProvider,
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+  ClerkLoaded,
+  ClerkLoading,
+} from "@clerk/nextjs";
 
 interface Event {
   _id: string;
@@ -92,12 +103,14 @@ const Dashboard = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const userID = "66c6d9bba15522307994e4bc";
+  const [adminStatus, setAdminStatus] = useState(0);
+  const { user } = useUser();
+  let userId = user?.id;
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch(`/api/events/${userID}`);
+        const response = await fetch(`/api/events/${userId}`);
         const data = await response.json();
 
         if (data.success) {
@@ -113,7 +126,28 @@ const Dashboard = () => {
     };
 
     fetchEvents();
-  }, []);
+  }, [user]);
+
+  // Fetch admin status for the user
+  useEffect(() => {
+    const fetchAdminStatus = async () => {
+      try {
+        // userId = user?.id;
+        const response = await fetch(`/api/getadminstatus/${userId}`);
+        const data = await response.json();
+
+        if (data.success) {
+          setAdminStatus(data.status);
+        } else {
+          setError("Failed to load admin status");
+        }
+      } catch (err) {
+        setError((err as Error).message);
+      }
+    };
+
+    fetchAdminStatus();
+  }, [user]);
 
   const exportToExcel = () => {
     // Format data to be compatible with Excel
@@ -325,6 +359,37 @@ const Dashboard = () => {
               className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
             />
           </div>
+
+          {/* ckerk authentication */}
+          <div className="auth-btns flex gap-x-3">
+            <ClerkLoaded>
+              <SignedOut>
+                <Button variant="ghost" className="text-primary">
+                  <SignInButton
+                    mode="modal"
+                    fallbackRedirectUrl={"/dashboard"}
+                  />
+                </Button>
+                <Button variant="default">
+                  <SignUpButton
+                    mode="modal"
+                    fallbackRedirectUrl={"/dashboard"}
+                  />
+                </Button>
+              </SignedOut>
+              <SignedIn>
+                <UserButton afterSignOutUrl="/" />
+              </SignedIn>
+            </ClerkLoaded>
+            <ClerkLoading>
+              <Button variant="ghost" disabled>
+                Sign in
+              </Button>
+              <Button variant="default" disabled>
+                Sign up
+              </Button>
+            </ClerkLoading>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -363,6 +428,14 @@ const Dashboard = () => {
                 </TabsTrigger>
               </TabsList>
               <div className="ml-auto flex items-center gap-2">
+                <div>
+                  <h1>
+                    {adminStatus === 0 && "loading..."}
+                    {adminStatus === 1 && "You have not applied for admin."}
+                    {adminStatus === 2 && "Your admin request is pending."}
+                    {adminStatus === 3 && "Your admin request is approved."}
+                  </h1>
+                </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="h-8 gap-1">
@@ -415,304 +488,6 @@ const Dashboard = () => {
                     Manage your events and view their insights.
                   </CardDescription>
                 </CardHeader>
-
-                {/* <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="hidden w-[100px] sm:table-cell">
-                          <span className="sr-only">Image</span>
-                        </TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Price
-                        </TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Total Sales
-                        </TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Created at
-                        </TableHead>
-                        <TableHead>
-                          <span className="sr-only">Actions</span>
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell className="hidden sm:table-cell">
-                          <Image
-                            alt="Product image"
-                            className="aspect-square rounded-md object-cover"
-                            height="64"
-                            src="/logo.png"
-                            width="64"
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          Laser Lemonade Machine
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">Draft</Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          $499.99
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          25
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          2023-07-12 10:42 AM
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                aria-haspopup="true"
-                                size="icon"
-                                variant="ghost"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>Edit</DropdownMenuItem>
-                              <DropdownMenuItem>Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="hidden sm:table-cell">
-                          <Image
-                            alt="Product image"
-                            className="aspect-square rounded-md object-cover"
-                            height="64"
-                            src="/logo.png"
-                            width="64"
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          Hypernova Headphones
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">Active</Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          $129.99
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          100
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          2023-10-18 03:21 PM
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                aria-haspopup="true"
-                                size="icon"
-                                variant="ghost"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>Edit</DropdownMenuItem>
-                              <DropdownMenuItem>Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="hidden sm:table-cell">
-                          <Image
-                            alt="Product image"
-                            className="aspect-square rounded-md object-cover"
-                            height="64"
-                            src="/logo.png"
-                            width="64"
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          AeroGlow Desk Lamp
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">Active</Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          $39.99
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          50
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          2023-11-29 08:15 AM
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                aria-haspopup="true"
-                                size="icon"
-                                variant="ghost"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>Edit</DropdownMenuItem>
-                              <DropdownMenuItem>Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="hidden sm:table-cell">
-                          <Image
-                            alt="Product image"
-                            className="aspect-square rounded-md object-cover"
-                            height="64"
-                            src="/logo.png"
-                            width="64"
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          TechTonic Energy Drink
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">Draft</Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          $2.99
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          0
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          2023-12-25 11:59 PM
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                aria-haspopup="true"
-                                size="icon"
-                                variant="ghost"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>Edit</DropdownMenuItem>
-                              <DropdownMenuItem>Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="hidden sm:table-cell">
-                          <Image
-                            alt="Product image"
-                            className="aspect-square rounded-md object-cover"
-                            height="64"
-                            src="/logo.png"
-                            width="64"
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          Gamer Gear Pro Controller
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">Active</Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          $59.99
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          75
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          2024-01-01 12:00 AM
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                aria-haspopup="true"
-                                size="icon"
-                                variant="ghost"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>Edit</DropdownMenuItem>
-                              <DropdownMenuItem>Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="hidden sm:table-cell">
-                          <Image
-                            alt="Product image"
-                            className="aspect-square rounded-md object-cover"
-                            height="64"
-                            src="/logo.png"
-                            width="64"
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          Luminous VR Headset
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">Active</Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          $199.99
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          30
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          2024-02-14 02:14 PM
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                aria-haspopup="true"
-                                size="icon"
-                                variant="ghost"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>Edit</DropdownMenuItem>
-                              <DropdownMenuItem>Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </CardContent> */}
 
                 <EventsTable events={events} />
                 <CardFooter>

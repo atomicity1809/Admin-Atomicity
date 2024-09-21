@@ -1,27 +1,49 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema } from "mongoose";
+
+interface IBoardMember {
+  position: string;
+  userId: string;
+}
+
+const BoardMemberSchema = new Schema({
+  position: { type: String, required: true },
+  userId: { type: String, required: true },
+});
 
 interface IAdmin extends Document {
-    clubName: string;
-    presidentName: string;
-    type: string;
-    pastEvents: mongoose.Types.ObjectId[];
-    currentEvents: mongoose.Types.ObjectId[];
-    presidentMobileNo: string;
-    rollNo: string;
-    membersOfClub: mongoose.Types.ObjectId[];
+  clubName: string;
+  type: string;
+  pastEvents: string[];
+  currentEvents: string[];
+  boardMembersOfClub: IBoardMember[];
+  executiveCommitteeMembers: string[];
+  bio: string;
+  logo: string;
+  coverImage: string;
+  membershipForm: string;
+  socialMediaLinks: string[];
+  facultyAdvisor: string;
+  website: string;
+  clerkId: string;
 }
 
 const adminSchema: Schema = new Schema<IAdmin>({
-    clubName: { type: String, required: true },
-    presidentName: { type: String, required: true },
-    type: { type: String, required: true },
-    pastEvents: { type: [Schema.Types.ObjectId], ref: 'Event' },
-    currentEvents: { type: [Schema.Types.ObjectId], ref: 'Event' },
-    presidentMobileNo: { type: String, required: true },
-    rollNo: { type: String, required: true },
-    membersOfClub: { type: [Schema.Types.ObjectId], ref: 'User' }
+  clubName: { type: String, required: true },
+  type: { type: String, required: true },
+  pastEvents: { type: [String], default: [] },
+  currentEvents: { type: [String], default: [] },
+  boardMembersOfClub: { type: [BoardMemberSchema] },
+  executiveCommitteeMembers: { type: [String], default: [] },
+  bio: { type: String, default: "" },
+  logo: { type: String, default: "", required: true },
+  coverImage: { type: String, default: "" },
+  membershipForm: { type: String, default: "" },
+  socialMediaLinks: { type: [String], default: [] },
+  facultyAdvisor: { type: String },
+  website: { type: String, default: "" },
+  clerkId: { type: String, required: true },
 });
 
-const Admin = mongoose.model<IAdmin>('Admin', adminSchema);
+const Admin = mongoose.models.Admin || mongoose.model<IAdmin>("Admin", adminSchema);
 
 export default Admin;

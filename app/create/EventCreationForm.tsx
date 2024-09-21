@@ -41,6 +41,7 @@ const OWNER_ID = "66c6d9bba15522307994e4bc";
 const PROJECT_ID = '66e82a130039a555701b';
 const BUCKET_ID = '66e82bad0006fa424b7e';
 
+
 // Initialize Appwrite client
 const client = new Client()
     .setEndpoint('https://cloud.appwrite.io/v1')
