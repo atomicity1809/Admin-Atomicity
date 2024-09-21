@@ -32,7 +32,9 @@ const SignupForm: React.FC = () => {
   });
 
   // Handler for input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     // console.log(name, value);
     setFormData((prevData) => ({
@@ -41,7 +43,7 @@ const SignupForm: React.FC = () => {
     }));
     setFormData((prevFormData) => ({
       ...prevFormData,
-      clerkId: user?.id || "", 
+      clerkId: user?.id || "",
       emailId: user?.emailAddresses[0]?.emailAddress || "",
     }));
     // console.log(formData);
@@ -94,7 +96,8 @@ const SignupForm: React.FC = () => {
     e.preventDefault();
     setFormData((prevFormData) => ({
       ...prevFormData,
-      clerkId: user?.id || "", 
+      clerkId: user?.id || "",
+      emailId: user?.emailAddresses[0]?.emailAddress || "",
     }));
     // console.log("Form data:", formData);
     // console.log("line 94: ",user);
