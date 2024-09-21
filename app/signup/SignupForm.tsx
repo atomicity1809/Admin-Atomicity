@@ -1,322 +1,191 @@
-"use client";
+"use client"
+
 import React, { useState } from "react";
 import { Client, Storage, ID } from "appwrite";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-// const OWNER_ID = "66c6d9bba15522307994e4bc";
 const PROJECT_ID = process.env.NEXT_PUBLIC_PROJECT_ID || "";
 const BUCKET_ID = process.env.NEXT_PUBLIC_BUCKET_ID || "";
 const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT || "";
 
-// Initialize Appwrite client
 const client = new Client()
-  .setEndpoint(API_ENDPOINT) // Use environment variable for API endpoint
-  .setProject(PROJECT_ID);   // Use environment variable for project ID
+  .setEndpoint(API_ENDPOINT)
+  .setProject(PROJECT_ID);
 
 const storage = new Storage(client);
 
 const SignupForm: React.FC = () => {
   const router = useRouter();
   const { user } = useUser();
-  // console.log(user);
-  // Define the state for the form
   const [formData, setFormData] = useState({
     clubName: "",
     type: "tech",
     logo: "",
-    // coverImage: "",
-    // socialMediaLinks: [""], // Now it's an array of strings
     institute: "itnu",
     clerkId: user?.id || "",
     emailId: user?.emailAddresses[0]?.emailAddress || "",
   });
+  const [error, setError] = useState("");
 
-  // Handler for input changes
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    // console.log(name, value);
+  const handleInputChange = (name: string, value: string) => {
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
-    }));
-    setFormData((prevFormData) => ({
-      ...prevFormData,
       clerkId: user?.id || "",
       emailId: user?.emailAddresses[0]?.emailAddress || "",
     }));
-    // console.log(formData);
   };
 
-  // Handler for social media links changes
-  // const handleSocialLinkChange = (
-  //   index: number,
-  //   e: React.ChangeEvent<HTMLInputElement>
-  // ) => {
-  //   const { value } = e.target;
-  //   const newSocialLinks = [...formData.socialMediaLinks];
-  //   newSocialLinks[index] = value; // Directly update the string value
-  //   setFormData({ ...formData, socialMediaLinks: newSocialLinks });
-  // };
-
-  // Add a new social media link field
-  // const addSocialMediaLink = () => {
-  //   setFormData((prevData) => ({
-  //     ...prevData,
-  //     socialMediaLinks: [...prevData.socialMediaLinks, ""], // Add an empty string for the new link
-  //   }));
-  // };
-
-  // Remove social link
-  // const removeSocialMediaLink = (index: number) => {
-  //   const newSocialLinks = [...formData.socialMediaLinks];
-  //   newSocialLinks.splice(index, 1);
-  //   setFormData({ ...formData, socialMediaLinks: newSocialLinks });
-  // };
-
-  const handleFileUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    field: string
-  ) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       try {
         const response = await storage.createFile(BUCKET_ID, ID.unique(), file);
         const fileUrl = storage.getFileView(BUCKET_ID, response.$id).href;
-        setFormData((prev) => ({ ...prev, [field]: fileUrl }));
+        setFormData((prev) => ({ ...prev, logo: fileUrl }));
       } catch (error) {
-        console.error(`Error uploading ${field}: ok`, error);
+        console.error("Error uploading logo:", error);
+        setError("Failed to upload logo. Please try again.");
       }
     }
   };
 
-  // Handler for form submission
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setFormData((prevFormData) => ({
-      ...prevFormData,
-      clerkId: user?.id || "",
-      emailId: user?.emailAddresses[0]?.emailAddress || "",
-    }));
-    // console.log("Form data:", formData);
-    // console.log("line 94: ",user);
+    setError("");
 
-    const hasEmptyFields = Object.values(formData).some(
-      (value) => value === ""
-    );
-
+    const hasEmptyFields = Object.values(formData).some((value) => value === "");
     if (hasEmptyFields) {
-      console.error("All fields must be filled.");
-      // You can use a toast or any alert method to show the error
+      setError("All fields must be filled.");
       return;
     }
-    const response = await fetch("/api/signup", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
-    });
-    console.log(response);
 
-    if (response.status == 201) {
-      console.log("req sent");
-      // add toaster to show this message--------------------------------------------
-      router.push("/dashboard");
-    } else {
-      console.log("Error");
+    try {
+      const response = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.status === 201) {
+        router.push("/pending-request");
+      } else {
+        throw new Error("Signup failed");
+      }
+    } catch (error) {
+      console.error("Error during signup:", error);
+      setError("An error occurred during signup. Please try again.");
     }
   };
 
   return (
-    <div>
-      <h1>Sign Up Form</h1>
-      <form onSubmit={handleSubmit} className="max-w-md mx-auto mt-8 space-y-6">
-        <div>
-          <label className="block text-sm font-medium">Club Name</label>
-          <input
-            type="text"
-            name="clubName"
-            value={formData.clubName}
-            onChange={handleInputChange}
-            required
-            className="w-full px-4 py-2 border rounded-md"
-          />
-        </div>
-
-        {/* Type of club */}
-        <div>
-          <label className="block text-sm font-medium">Type of Club</label>
-          <select
-            name="type"
-            value={formData.type}
-            onChange={handleInputChange}
-            required
-            className="w-full px-4 py-2 border rounded-md"
-          >
-            <option value="tech">Tech Club</option>
-            <option value="non-tech">Non-Tech Club</option>
-          </select>
-        </div>
-
-        {/* institute */}
-        <div>
-          <label className="block text-sm font-medium">Institute</label>
-          <select
-            name="institute"
-            value={formData.institute}
-            onChange={handleInputChange}
-            required
-            className="w-full px-4 py-2 border rounded-md"
-          >
-            <option value="itnu">ITNU</option>
-            <option value="imnu">IMNU</option>
-            <option value="ipnu">IPNU</option>
-            <option value="ianu">IANU</option>
-          </select>
-        </div>
-        {/* <div>
-          <label className="block text-sm font-medium">Bio</label>
-          <textarea
-            name="bio"
-            value={formData.bio}
-            onChange={handleInputChange}
-            className="w-full px-4 py-2 border rounded-md"
-          />
-        </div> */}
-
-        <div>
-          <label htmlFor="logo">Logo: </label>
-          <input
-            id="logo"
-            name="logo"
-            type="file"
-            accept="image/*"
-            onChange={(e) => handleFileUpload(e, "logo")}
-          />
-        </div>
-
-        {/* <div>
-          <label className="block text-sm font-medium">Logo URL</label>
-          <input
-            type="text"
-            name="logo"
-            value={formData.logo}
-            onChange={handleInputChange}
-            required
-            className="w-full px-4 py-2 border rounded-md"
-          />
-        </div> */}
-
-        {/* <div>
-          <label className="block text-sm font-medium">Cover Image URL</label>
-          <input
-            type="text"
-            name="coverImage"
-            value={formData.coverImage}
-            onChange={handleInputChange}
-            className="w-full px-4 py-2 border rounded-md"
-          />
-        </div> */}
-
-        {/* <div>
-          <label htmlFor="coverImage">Cover Image: </label>
-          <input
-            id="coverImage"
-            name="coverImage"
-            type="file"
-            accept="image/*"
-            onChange={(e) => handleFileUpload(e, "coverImage")}
-          />
-        </div> */}
-
-        {/* <div>
-          <label className="block text-sm font-medium">
-            Membership Form URL
-          </label>
-          <input
-            type="text"
-            name="membershipForm"
-            value={formData.membershipForm}
-            onChange={handleInputChange}
-            className="w-full px-4 py-2 border rounded-md"
-          />
-        </div> */}
-
-        {/* Social Media Links */}
-        {/* <div>
-          <label className="block text-sm font-medium">
-            Social Media Links
-          </label>
-          {formData.socialMediaLinks.map((socialLink, index) => (
-            <div key={index} className="space-y-2 flex items-center">
-              <div className="flex-grow">
-                <input
-                  type="text"
-                  name="socialMediaName"
-                  placeholder="Social Media Name"
-                  value={socialLink.socialMediaName}
-                  onChange={(e) => handleSocialLinkChange(index, e)}
-                  className="w-full px-4 py-2 border rounded-md"
-                /> 
-                <input
-                  type="text"
-                  name="socialMediaLink"
-                  placeholder="Social Media Link"
-                  value={socialLink.socialMediaLink}
-                  onChange={(e) => handleSocialLinkChange(index, e)}
-                  className="w-full px-4 py-2 border rounded-md mt-2"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => removeSocialMediaLink(index)}
-                className="ml-2 text-red-500"
-              >
-                🗑️
-              </button>
+    <div className="flex justify-center items-start space-x-8 p-8">
+      <Card className="w-1/2">
+        <CardHeader>
+          <CardTitle>Sign Up Form</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="clubName">Club Name</Label>
+              <Input
+                id="clubName"
+                value={formData.clubName}
+                onChange={(e) => handleInputChange("clubName", e.target.value)}
+                required
+              />
             </div>
-          ))}
-          <button
-            type="button"
-            onClick={addSocialMediaLink}
-            className="mt-2 text-blue-500"
-          >
-            Add another social media link
-          </button>
-        </div> */}
 
-        {/* <div>
-          <label className="block text-sm font-medium">Faculty Advisor</label>
-          <input
-            type="text"
-            name="facultyAdvisor"
-            value={formData.facultyAdvisor}
-            onChange={handleInputChange}
-            className="w-full px-4 py-2 border rounded-md"
-          />
-        </div> */}
+            <div className="space-y-2">
+              <Label htmlFor="type">Type of Club</Label>
+              <Select
+                value={formData.type}
+                onValueChange={(value) => handleInputChange("type", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select club type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tech">Tech Club</SelectItem>
+                  <SelectItem value="non-tech">Non-Tech Club</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* <div>
-          <label className="block text-sm font-medium">Website URL</label>
-          <input
-            type="text"
-            name="website"
-            value={formData.website}
-            onChange={handleInputChange}
-            className="w-full px-4 py-2 border rounded-md"
-          />
-        </div> */}
+            <div className="space-y-2">
+              <Label htmlFor="institute">Institute</Label>
+              <Select
+                value={formData.institute}
+                onValueChange={(value) => handleInputChange("institute", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select institute" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="itnu">ITNU</SelectItem>
+                  <SelectItem value="imnu">IMNU</SelectItem>
+                  <SelectItem value="ipnu">IPNU</SelectItem>
+                  <SelectItem value="ianu">IANU</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        <button
-          type="submit"
-          className="w-full py-2 bg-blue-600 text-white rounded-md"
-        >
-          Submit
-        </button>
-      </form>
+            <div className="space-y-2">
+              <Label htmlFor="logo">Logo</Label>
+              <Input
+                id="logo"
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+              />
+            </div>
+
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <Button type="submit" className="w-full">
+              Submit
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="w-1/2">
+        <CardHeader>
+          <CardTitle>Preview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center space-y-4">
+            <Avatar className="w-32 h-32">
+              <AvatarImage src={formData.logo} alt="Club Logo" />
+              <AvatarFallback>{formData.clubName.slice(0, 2).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <h2 className="text-2xl font-bold">{formData.clubName || "Club Name"}</h2>
+            <div className="flex space-x-2">
+              <span className="bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">
+                {formData.type === "tech" ? "Tech Club" : "Non-Tech Club"}
+              </span>
+              <span className="bg-green-100 text-green-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">
+                {formData.institute.toUpperCase()}
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

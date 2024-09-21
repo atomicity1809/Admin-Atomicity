@@ -17,8 +17,12 @@ import { cn } from "@/lib/utils";
 import { ArrowLeft, Calendar as CalendarIcon, InfoIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-// import { useToast } from "@/hooks/use-toast";
 import { Client, Storage, ID } from "appwrite";
+import dynamic from 'next/dynamic';
+
+const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false });
+const MDPreview = dynamic(() => import('@uiw/react-md-editor').then((mod) => mod.default.Markdown), { ssr: false });
+
 
 interface EventData {
   title: string;
@@ -35,11 +39,23 @@ interface EventData {
   supportFile: string;
   visibility: boolean;
   isAvailableToReg: boolean;
+  tags: string[];
+  categories: string[];
+  likeCounter: number;
+  links: string[];
+  registrationOpenTill: Date;
+  additionalInfo: string;
 }
 
+<<<<<<< Updated upstream
 const PROJECT_ID = process.env.NEXT_PUBLIC_PROJECT_ID || "";
 const BUCKET_ID = process.env.NEXT_PUBLIC_BUCKET_ID_EVENTS || "";
 const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT || "";
+=======
+const OWNER_ID = "66c6d9bba15522307994e4bc";
+const PROJECT_ID = '66e82a130039a555701b';
+const BUCKET_ID = '66e82bad0006fa424b7e';
+>>>>>>> Stashed changes
 
 // Initialize Appwrite client
 const client = new Client()
@@ -48,12 +64,13 @@ const client = new Client()
 
 const storage = new Storage(client);
 
-
 const EventCreationForm: React.FC = () => {
   const router = useRouter();
-//   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+<<<<<<< Updated upstream
   const OWNER_ID = "66c6d9bba15522307994e4bc";
+=======
+>>>>>>> Stashed changes
 
   const [eventData, setEventData] = useState<EventData>({
     title: "",
@@ -70,6 +87,12 @@ const EventCreationForm: React.FC = () => {
     supportFile: "",
     visibility: true,
     isAvailableToReg: true,
+    tags: [],
+    categories: [],
+    likeCounter: 0,
+    links: [],
+    registrationOpenTill: new Date(),
+    additionalInfo: "",
   });
 
   const handleInputChange = (
@@ -97,9 +120,9 @@ const EventCreationForm: React.FC = () => {
     setEventData((prev) => ({ ...prev, [name]: checked }));
   };
 
-  const handleDateChange = (date: Date | undefined) => {
+  const handleDateChange = (date: Date | undefined, field: string) => {
     if (date) {
-      setEventData((prev) => ({ ...prev, date }));
+      setEventData((prev) => ({ ...prev, [field]: date }));
     }
   };
 
@@ -113,18 +136,30 @@ const EventCreationForm: React.FC = () => {
         const response = await storage.createFile(BUCKET_ID, ID.unique(), file);
         const fileUrl = storage.getFileView(BUCKET_ID, response.$id).href;
         setEventData((prev) => ({ ...prev, [field]: fileUrl }));
-        // toast({
-        //   title: "File Uploaded",
-        //   description: `${field} has been successfully uploaded.`,
-        // });
       } catch (error) {
-        console.error(`Error uploading ${field}:, error`);
-        // toast({
-        //   title: "Upload Error",
-        //   description: `Failed to upload ${field}. Please try again.`,
-        //   variant: "destructive",
-        // });
+        console.error(`Error uploading ${field}:`, error);
       }
+    }
+  };
+
+  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const tags = e.target.value.split(',').map(tag => tag.trim());
+    setEventData(prev => ({ ...prev, tags }));
+  };
+
+  const handleCategoriesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const categories = e.target.value.split(',').map(category => category.trim());
+    setEventData(prev => ({ ...prev, categories }));
+  };
+
+  const handleLinksChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const links = e.target.value.split('\n').map(link => link.trim()).filter(Boolean);
+    setEventData(prev => ({ ...prev, links }));
+  };
+
+  const handleAdditionalInfoChange = (value: string | undefined) => {
+    if (value !== undefined) {
+      setEventData(prev => ({ ...prev, additionalInfo: value }));
     }
   };
 
@@ -137,6 +172,7 @@ const EventCreationForm: React.FC = () => {
         ...eventData,
         owner: OWNER_ID,
         date: eventData.date.toISOString(),
+        registrationOpenTill: eventData.registrationOpenTill.toISOString(),
       };
 
       const response = await fetch("/api/event", {
@@ -149,25 +185,13 @@ const EventCreationForm: React.FC = () => {
 
       if (!response.ok) {
         throw new Error("Failed to create event");
-        // toast.error("Failed to create Event...");
       }
 
       const result = await response.json();
 
-
-    //   toast({
-    //     title: "Event Created",
-    //     description: "Your event has been successfully created.",
-    //   });
-
       router.push("/events");
     } catch (error) {
       console.error("Error creating event:", error);
-    //   toast({
-    //     title: "Error",
-    //     description: "Failed to create event. Please try again.",
-    //     variant: "destructive",
-    //   });
     } finally {
       setIsLoading(false);
     }
@@ -233,7 +257,7 @@ const EventCreationForm: React.FC = () => {
                 <Calendar
                   mode="single"
                   selected={eventData.date}
-                  onSelect={handleDateChange}
+                  onSelect={(date) => handleDateChange(date, 'date')}
                   initialFocus
                 />
               </PopoverContent>
@@ -273,7 +297,7 @@ const EventCreationForm: React.FC = () => {
               Maximum Allowed Participants
             </Label>
             <Input
-              id="maxAllowedParticipantsOf"
+              id="maxAllowedParticipants"
               name="maxAllowedParticipants"
               type="number"
               value={
@@ -341,6 +365,70 @@ const EventCreationForm: React.FC = () => {
             />
             <Label htmlFor="isAvailableToReg">Available for Registration</Label>
           </div>
+          <div>
+            <Label htmlFor="tags">Tags (comma-separated)</Label>
+            <Input
+              id="tags"
+              name="tags"
+              value={eventData.tags.join(', ')}
+              onChange={handleTagsChange}
+            />
+          </div>
+          <div>
+            <Label htmlFor="categories">Categories (comma-separated)</Label>
+            <Input
+              id="categories"
+              name="categories"
+              value={eventData.categories.join(', ')}
+              onChange={handleCategoriesChange}
+            />
+          </div>
+          <div>
+            <Label htmlFor="links">Links (one per line)</Label>
+            <Textarea
+              id="links"
+              name="links"
+              value={eventData.links.join('\n')}
+              onChange={handleLinksChange}
+            />
+          </div>
+          <div>
+            <Label htmlFor="registrationOpenTill">Registration Open Till</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !eventData.registrationOpenTill && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {eventData.registrationOpenTill ? (
+                    format(eventData.registrationOpenTill, "PPP")
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={eventData.registrationOpenTill}
+                  onSelect={(date) => handleDateChange(date, 'registrationOpenTill')}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div>
+            <Label htmlFor="additionalInfo">Additional Information</Label>
+            <MDEditor
+              value={eventData.additionalInfo}
+              onChange={handleAdditionalInfoChange}
+            />
+          </div>
+
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Creating Event..." : "Create Event"}
           </Button>
@@ -397,6 +485,44 @@ const EventCreationForm: React.FC = () => {
                   Registration Open
                 </span>
               )}
+            </div>
+            <div>
+              <h4 className="font-semibold">Tags:</h4>
+              <div className="flex flex-wrap gap-2">
+                {eventData.tags.map((tag, index) => (
+                  <span key={index} className="px-2 py-1 bg-gray-100 rounded-full text-xs">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold">Categories:</h4>
+              <div className="flex flex-wrap gap-2">
+                {eventData.categories.map((category, index) => (
+                  <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                    {category}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold">Links:</h4>
+              <ul className="list-disc list-inside">
+                {eventData.links.map((link, index) => (
+                  <li key={index} className="text-blue-500 hover:underline">
+                    <a href={link} target="_blank" rel="noopener noreferrer">{link}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold">Registration Open Till:</h4>
+              <p>{format(eventData.registrationOpenTill, "PPP")}</p>
+            </div>
+            <div>
+              <h4 className="font-semibold">Additional Information:</h4>
+              <MDPreview source={eventData.additionalInfo} />
             </div>
             <Button className="w-full" disabled={!eventData.isAvailableToReg}>
               {eventData.isAvailableToReg
