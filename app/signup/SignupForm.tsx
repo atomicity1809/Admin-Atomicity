@@ -4,14 +4,15 @@ import { Client, Storage, ID } from "appwrite";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 
-const OWNER_ID = "66c6d9bba15522307994e4bc";
-const PROJECT_ID = "66ee5e29002deb03acf6";
-const BUCKET_ID = "66ee5e4b001aa7d4bc64";
+// const OWNER_ID = "66c6d9bba15522307994e4bc";
+const PROJECT_ID = process.env.NEXT_PUBLIC_PROJECT_ID || "";
+const BUCKET_ID = process.env.NEXT_PUBLIC_BUCKET_ID || "";
+const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT || "";
 
 // Initialize Appwrite client
 const client = new Client()
-  .setEndpoint("https://cloud.appwrite.io/v1")
-  .setProject(PROJECT_ID);
+  .setEndpoint(API_ENDPOINT) // Use environment variable for API endpoint
+  .setProject(PROJECT_ID);   // Use environment variable for project ID
 
 const storage = new Storage(client);
 
