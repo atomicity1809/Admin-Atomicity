@@ -53,7 +53,7 @@ const EventCreationForm: React.FC = () => {
   const router = useRouter();
 //   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  // const OWNER_ID = "66c6d9bba15522307994e4bc";
+  const OWNER_ID = "66c6d9bba15522307994e4bc";
 
   const [eventData, setEventData] = useState<EventData>({
     title: "",
