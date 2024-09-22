@@ -18,11 +18,16 @@ import { ArrowLeft, Calendar as CalendarIcon, InfoIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Client, Storage, ID } from "appwrite";
-import dynamic from 'next/dynamic';
+import dynamic from "next/dynamic";
+import Image from "next/image";
+import { useUser } from "@clerk/nextjs";
+import { toast, Toaster } from "sonner";
 
-const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false });
-const MDPreview = dynamic(() => import('@uiw/react-md-editor').then((mod) => mod.default.Markdown), { ssr: false });
-
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
+const MDPreview = dynamic(
+  () => import("@uiw/react-md-editor").then((mod) => mod.default.Markdown),
+  { ssr: false }
+);
 
 interface EventData {
   title: string;
@@ -30,6 +35,7 @@ interface EventData {
   description: string;
   date: Date;
   location: string;
+  mode: string;
   time: string;
   fees: number;
   maxAllowedParticipants: number;
@@ -42,31 +48,33 @@ interface EventData {
   tags: string[];
   categories: string[];
   likeCounter: number;
-  links: string[];
   registrationOpenTill: Date;
   additionalInfo: string;
+  ownerId: string;
 }
 
-const OWNER_ID = "66c6d9bba15522307994e4bc";
-const PROJECT_ID = '66e82a130039a555701b';
-const BUCKET_ID = '66e82bad0006fa424b7e';
-const API_ENDPOINT="https://cloud.appwrite.io/v1";
-// Initialize Appwrite client
-const client = new Client()
-  .setEndpoint(API_ENDPOINT)
-  .setProject(PROJECT_ID);
+const PROJECT_ID = process.env.NEXT_PUBLIC_PROJECT_ID || "";
+const BUCKET_ID = process.env.NEXT_PUBLIC_BUCKET_ID || "";
+const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT || "";
+
+const client = new Client().setEndpoint(API_ENDPOINT).setProject(PROJECT_ID);
 
 const storage = new Storage(client);
 
 const EventCreationForm: React.FC = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const { user } = useUser();
+  const today = new Date();
+
+  // let ownerId = user?.id
 
   const [eventData, setEventData] = useState<EventData>({
     title: "",
     subtitle: "",
     description: "",
     date: new Date(),
+    mode: "offline", // default value
     location: "",
     time: "",
     fees: 0,
@@ -80,13 +88,15 @@ const EventCreationForm: React.FC = () => {
     tags: [],
     categories: [],
     likeCounter: 0,
-    links: [],
     registrationOpenTill: new Date(),
     additionalInfo: "",
+    ownerId: user?.id || "",
   });
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value, type } = e.target;
     setEventData((prev) => ({
@@ -128,39 +138,39 @@ const EventCreationForm: React.FC = () => {
         setEventData((prev) => ({ ...prev, [field]: fileUrl }));
       } catch (error) {
         console.error(`Error uploading ${field}:`, error);
+        toast.error("Error in file upload. try again...");
       }
     }
   };
 
   const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const tags = e.target.value.split(',').map(tag => tag.trim());
-    setEventData(prev => ({ ...prev, tags }));
+    const tags = e.target.value.split(",").map((tag) => tag.trim());
+    setEventData((prev) => ({ ...prev, tags }));
   };
 
   const handleCategoriesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const categories = e.target.value.split(',').map(category => category.trim());
-    setEventData(prev => ({ ...prev, categories }));
-  };
-
-  const handleLinksChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const links = e.target.value.split('\n').map(link => link.trim()).filter(Boolean);
-    setEventData(prev => ({ ...prev, links }));
+    const categories = e.target.value
+      .split(",")
+      .map((category) => category.trim());
+    setEventData((prev) => ({ ...prev, categories }));
   };
 
   const handleAdditionalInfoChange = (value: string | undefined) => {
     if (value !== undefined) {
-      setEventData(prev => ({ ...prev, additionalInfo: value }));
+      setEventData((prev) => ({ ...prev, additionalInfo: value }));
     }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // ownerId = user?.id;
+    console.log(user.id);
     setIsLoading(true);
 
     try {
       const eventDataWithOwner = {
         ...eventData,
-        owner: OWNER_ID,
+        ownerId: user?.id,
         date: eventData.date.toISOString(),
         registrationOpenTill: eventData.registrationOpenTill.toISOString(),
       };
@@ -179,7 +189,7 @@ const EventCreationForm: React.FC = () => {
 
       const result = await response.json();
 
-      router.push("/events");
+      router.push("/dashboard");
     } catch (error) {
       console.error("Error creating event:", error);
     } finally {
@@ -196,6 +206,7 @@ const EventCreationForm: React.FC = () => {
           </Link>
           <h2 className="text-2xl font-bold">Create Event</h2>
         </div>
+        {/* titile */}
         <div className="space-y-4">
           <div>
             <Label htmlFor="title">Title</Label>
@@ -206,6 +217,8 @@ const EventCreationForm: React.FC = () => {
               onChange={handleInputChange}
             />
           </div>
+
+          {/* sub titile */}
           <div>
             <Label htmlFor="subtitle">Subtitle</Label>
             <Input
@@ -215,6 +228,8 @@ const EventCreationForm: React.FC = () => {
               onChange={handleInputChange}
             />
           </div>
+
+          {/* description */}
           <div>
             <Label htmlFor="description">Description</Label>
             <Textarea
@@ -224,6 +239,8 @@ const EventCreationForm: React.FC = () => {
               onChange={handleInputChange}
             />
           </div>
+
+          {/* date */}
           <div>
             <Label htmlFor="date">Date</Label>
             <Popover>
@@ -247,141 +264,15 @@ const EventCreationForm: React.FC = () => {
                 <Calendar
                   mode="single"
                   selected={eventData.date}
-                  onSelect={(date) => handleDateChange(date, 'date')}
+                  onSelect={(date) => handleDateChange(date, "date")}
+                  disabled={(date) => date < today} // Disable past dates
                   initialFocus
                 />
               </PopoverContent>
             </Popover>
           </div>
-          <div>
-            <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              name="location"
-              value={eventData.location}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div>
-            <Label htmlFor="time">Time</Label>
-            <Input
-              id="time"
-              name="time"
-              type="time"
-              value={eventData.time}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div>
-            <Label htmlFor="fees">Fees</Label>
-            <Input
-              id="fees"
-              name="fees"
-              type="number"
-              value={eventData.fees}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div>
-            <Label htmlFor="maxParticipants">
-              Maximum Allowed Participants
-            </Label>
-            <Input
-              id="maxAllowedParticipants"
-              name="maxAllowedParticipants"
-              type="number"
-              value={
-                eventData.noMaxParticipants === true
-                  ? ""
-                  : eventData.maxAllowedParticipants
-              }
-              onChange={handleInputChange}
-              disabled={eventData.noMaxParticipants}
-              placeholder={eventData.noMaxParticipants ? "No limit" : ""}
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <input
-              id="noMaxParticipants"
-              type="checkbox"
-              checked={eventData.noMaxParticipants}
-              onChange={handleMaxParticipantsCheckbox}
-            />
-            <Label htmlFor="noMaxParticipants">No maximum participation</Label>
-          </div>
 
-          <div>
-            <Label htmlFor="coverImg">Cover Image</Label>
-            <Input
-              id="coverImg"
-              name="coverImg"
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileUpload(e, "coverImg")}
-            />
-          </div>
-          <div>
-            <Label htmlFor="detailImg">Detail Image</Label>
-            <Input
-              id="detailImg"
-              name="detailImg"
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileUpload(e, "detailImg")}
-            />
-          </div>
-          <div>
-            <Label htmlFor="supportFile">Support File</Label>
-            <Input
-              id="supportFile"
-              name="supportFile"
-              type="file"
-              onChange={(e) => handleFileUpload(e, "supportFile")}
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="visibility"
-              checked={eventData.visibility}
-              onCheckedChange={handleSwitchChange("visibility")}
-            />
-            <Label htmlFor="visibility">Visibility</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="isAvailableToReg"
-              checked={eventData.isAvailableToReg}
-              onCheckedChange={handleSwitchChange("isAvailableToReg")}
-            />
-            <Label htmlFor="isAvailableToReg">Available for Registration</Label>
-          </div>
-          <div>
-            <Label htmlFor="tags">Tags (comma-separated)</Label>
-            <Input
-              id="tags"
-              name="tags"
-              value={eventData.tags.join(', ')}
-              onChange={handleTagsChange}
-            />
-          </div>
-          <div>
-            <Label htmlFor="categories">Categories (comma-separated)</Label>
-            <Input
-              id="categories"
-              name="categories"
-              value={eventData.categories.join(', ')}
-              onChange={handleCategoriesChange}
-            />
-          </div>
-          <div>
-            <Label htmlFor="links">Links (one per line)</Label>
-            <Textarea
-              id="links"
-              name="links"
-              value={eventData.links.join('\n')}
-              onChange={handleLinksChange}
-            />
-          </div>
+          {/* registration open till */}
           <div>
             <Label htmlFor="registrationOpenTill">Registration Open Till</Label>
             <Popover>
@@ -405,18 +296,199 @@ const EventCreationForm: React.FC = () => {
                 <Calendar
                   mode="single"
                   selected={eventData.registrationOpenTill}
-                  onSelect={(date) => handleDateChange(date, 'registrationOpenTill')}
+                  onSelect={(date) =>
+                    handleDateChange(date, "registrationOpenTill")
+                  }
+                  disabled={(date) =>
+                    date < today || (eventData.date && date > eventData.date)
+                  }
                   initialFocus
                 />
               </PopoverContent>
             </Popover>
           </div>
+
+          {/* mode */}
+          <div>
+            <label htmlFor="mode">Mode of Event</label>
+            <select
+              id="mode"
+              name="mode"
+              value={eventData.mode}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border rounded-md"
+            >
+              <option value="online">Online</option>
+              <option value="offline">Offline</option>
+            </select>
+          </div>
+
+          {/* location */}
+          <div>
+            <label htmlFor="location">Location</label>
+            <input
+              id="location"
+              name="location"
+              value={eventData.location}
+              onChange={handleInputChange}
+              disabled={eventData.mode === "online"}
+              placeholder={
+                eventData.mode === "online"
+                  ? "Not required for online events"
+                  : "Enter event location"
+              }
+              className="w-full px-4 py-2 border rounded-md"
+            />
+          </div>
+
+          {/* time */}
+          <div>
+            <Label htmlFor="time">Time</Label>
+            <Input
+              id="time"
+              name="time"
+              type="time"
+              value={eventData.time}
+              onChange={handleInputChange}
+            />
+          </div>
+
+          {/* fees */}
+          <div>
+            <Label htmlFor="fees">Fees</Label>
+            <Input
+              id="fees"
+              name="fees"
+              type="number"
+              value={eventData.fees}
+              onChange={handleInputChange}
+            />
+          </div>
+
+          {/* Maximum allowed participation */}
+          <div>
+            <Label htmlFor="maxParticipants">
+              Maximum Allowed Participants
+            </Label>
+            <Input
+              id="maxAllowedParticipants"
+              name="maxAllowedParticipants"
+              type="number"
+              value={
+                eventData.noMaxParticipants === true
+                  ? ""
+                  : eventData.maxAllowedParticipants
+              }
+              onChange={handleInputChange}
+              disabled={eventData.noMaxParticipants}
+              placeholder={eventData.noMaxParticipants ? "No limit" : ""}
+            />
+          </div>
+
+          {/* no max participation */}
+          <div className="flex items-center space-x-2">
+            <input
+              id="noMaxParticipants"
+              type="checkbox"
+              checked={eventData.noMaxParticipants}
+              onChange={handleMaxParticipantsCheckbox}
+            />
+            <Label htmlFor="noMaxParticipants">No maximum participation</Label>
+          </div>
+
+          {/* cover image */}
+          <div>
+            <Label htmlFor="coverImg">Cover Image</Label>
+            <Input
+              id="coverImg"
+              name="coverImg"
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleFileUpload(e, "coverImg")}
+            />
+          </div>
+
+          {/* detail image */}
+          <div>
+            <Label htmlFor="detailImg">Detail Image</Label>
+            <Input
+              id="detailImg"
+              name="detailImg"
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleFileUpload(e, "detailImg")}
+            />
+          </div>
+
+          {/* support file */}
+          <div>
+            <Label htmlFor="supportFile">Support File</Label>
+            <Input
+              id="supportFile"
+              name="supportFile"
+              type="file"
+              onChange={(e) => handleFileUpload(e, "supportFile")}
+            />
+          </div>
+
+          {/* tags */}
+          <div>
+            <Label htmlFor="tags">Tags (comma-separated)</Label>
+            <Input
+              id="tags"
+              name="tags"
+              value={eventData.tags.join(", ")}
+              onChange={handleTagsChange}
+            />
+          </div>
+
+          {/* categories */}
+          <div>
+            <Label htmlFor="categories">Categories (comma-separated)</Label>
+            <Input
+              id="categories"
+              name="categories"
+              value={eventData.categories.join(", ")}
+              onChange={handleCategoriesChange}
+            />
+          </div>
+          {/* <div>
+            <Label htmlFor="links">Links (one per line)</Label>
+            <Textarea
+              id="links"
+              name="links"
+              value={eventData.links.join('\n')}
+              onChange={handleLinksChange}
+            />
+          </div> */}
+
+          {/* additional info */}
           <div>
             <Label htmlFor="additionalInfo">Additional Information</Label>
             <MDEditor
               value={eventData.additionalInfo}
               onChange={handleAdditionalInfoChange}
             />
+          </div>
+
+          {/* visibility */}
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="visibility"
+              checked={eventData.visibility}
+              onCheckedChange={handleSwitchChange("visibility")}
+            />
+            <Label htmlFor="visibility">Visibility</Label>
+          </div>
+
+          {/* isavailable to reg */}
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="isAvailableToReg"
+              checked={eventData.isAvailableToReg}
+              onCheckedChange={handleSwitchChange("isAvailableToReg")}
+            />
+            <Label htmlFor="isAvailableToReg">Available for Registration</Label>
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>
@@ -480,7 +552,10 @@ const EventCreationForm: React.FC = () => {
               <h4 className="font-semibold">Tags:</h4>
               <div className="flex flex-wrap gap-2">
                 {eventData.tags.map((tag, index) => (
-                  <span key={index} className="px-2 py-1 bg-gray-100 rounded-full text-xs">
+                  <span
+                    key={index}
+                    className="px-2 py-1 bg-gray-100 rounded-full text-xs"
+                  >
                     {tag}
                   </span>
                 ))}
@@ -490,22 +565,27 @@ const EventCreationForm: React.FC = () => {
               <h4 className="font-semibold">Categories:</h4>
               <div className="flex flex-wrap gap-2">
                 {eventData.categories.map((category, index) => (
-                  <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                  <span
+                    key={index}
+                    className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                  >
                     {category}
                   </span>
                 ))}
               </div>
             </div>
-            <div>
+            {/* <div>
               <h4 className="font-semibold">Links:</h4>
               <ul className="list-disc list-inside">
                 {eventData.links.map((link, index) => (
                   <li key={index} className="text-blue-500 hover:underline">
-                    <a href={link} target="_blank" rel="noopener noreferrer">{link}</a>
+                    <a href={link} target="_blank" rel="noopener noreferrer">
+                      {link}
+                    </a>
                   </li>
                 ))}
               </ul>
-            </div>
+            </div> */}
             <div>
               <h4 className="font-semibold">Registration Open Till:</h4>
               <p>{format(eventData.registrationOpenTill, "PPP")}</p>

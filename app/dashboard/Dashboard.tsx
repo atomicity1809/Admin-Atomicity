@@ -106,9 +106,11 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [adminStatus, setAdminStatus] = useState(0);
   const { user } = useUser();
-  let userId = user?.id;
+  const userId = user?.id;
+  const emailId = user?.emailAddresses[0].emailAddress;
 
   useEffect(() => {
+    if (!user) return;
     const fetchEvents = async () => {
       try {
         const response = await fetch(`/api/events/${userId}`);
@@ -131,6 +133,7 @@ const Dashboard = () => {
 
   // Fetch admin status for the user
   useEffect(() => {
+    if (!user) return;
     const fetchAdminStatus = async () => {
       try {
         // userId = user?.id;
@@ -429,20 +432,27 @@ const Dashboard = () => {
                 </TabsTrigger>
               </TabsList>
               <div className="ml-auto flex items-center gap-2">
-              <div>
-                {adminStatus === 0 && (
-                  <Badge className="bg-gray-200 text-gray-800">...</Badge>
-                )}
-                {adminStatus === 1 && (
-                  <Badge className="bg-red-100 text-red-800 text-xs">You have not applied for admin.</Badge>
-                )}
-                {adminStatus === 2 && (
-                  <Badge className="bg-yellow-100 text-yellow-800 text-xs">Wait till Atomicity verifies all details</Badge>
-                )}
-                {adminStatus === 3 && (
-                  <Badge className="bg-green-100 text-green-800 text-xs gap-1"><CheckCircle size={10}/>Verified by Atomicity</Badge>
-                )}
-              </div>
+                <div>
+                  {adminStatus === 0 && (
+                    <Badge className="bg-gray-200 text-gray-800">...</Badge>
+                  )}
+                  {adminStatus === 1 && (
+                    <Badge className="bg-red-100 text-red-800 text-xs">
+                      You have not applied for admin.
+                    </Badge>
+                  )}
+                  {adminStatus === 2 && (
+                    <Badge className="bg-yellow-100 text-yellow-800 text-xs">
+                      Wait till Atomicity verifies all details
+                    </Badge>
+                  )}
+                  {adminStatus === 3 && (
+                    <Badge className="bg-green-100 text-green-800 text-xs gap-1">
+                      <CheckCircle size={10} />
+                      Verified by Atomicity
+                    </Badge>
+                  )}
+                </div>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
