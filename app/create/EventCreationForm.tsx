@@ -164,7 +164,7 @@ const EventCreationForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // ownerId = user?.id;
-    console.log(user.id);
+    console.log(user?.id);
     setIsLoading(true);
 
     try {
