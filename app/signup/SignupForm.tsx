@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -35,6 +35,7 @@ const SignupForm: React.FC = () => {
     emailId: user?.emailAddresses[0]?.emailAddress || "",
   });
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (name: string, value: string) => {
     setFormData((prevData) => ({
@@ -49,12 +50,15 @@ const SignupForm: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       try {
+        setIsLoading(true);
         const response = await storage.createFile(BUCKET_ID, ID.unique(), file);
         const fileUrl = storage.getFileView(BUCKET_ID, response.$id).href;
         setFormData((prev) => ({ ...prev, logo: fileUrl }));
       } catch (error) {
         console.error("Error uploading logo:", error);
         setError("Failed to upload logo. Please try again.");
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -62,10 +66,12 @@ const SignupForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
 
     const hasEmptyFields = Object.values(formData).some((value) => value === "");
     if (hasEmptyFields) {
       setError("All fields must be filled.");
+      setIsLoading(false);
       return;
     }
 
@@ -84,6 +90,8 @@ const SignupForm: React.FC = () => {
     } catch (error) {
       console.error("Error during signup:", error);
       setError("An error occurred during signup. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -102,6 +110,7 @@ const SignupForm: React.FC = () => {
                 value={formData.clubName}
                 onChange={(e) => handleInputChange("clubName", e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -110,6 +119,7 @@ const SignupForm: React.FC = () => {
               <Select
                 value={formData.type}
                 onValueChange={(value) => handleInputChange("type", value)}
+                disabled={isLoading}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select club type" />
@@ -126,6 +136,7 @@ const SignupForm: React.FC = () => {
               <Select
                 value={formData.institute}
                 onValueChange={(value) => handleInputChange("institute", value)}
+                disabled={isLoading}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select institute" />
@@ -146,6 +157,7 @@ const SignupForm: React.FC = () => {
                 type="file"
                 accept="image/*"
                 onChange={handleFileUpload}
+                disabled={isLoading}
               />
             </div>
 
@@ -157,8 +169,15 @@ const SignupForm: React.FC = () => {
               </Alert>
             )}
 
-            <Button type="submit" className="w-full">
-              Submit
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Please wait
+                </>
+              ) : (
+                "Submit"
+              )}
             </Button>
           </form>
         </CardContent>
