@@ -25,6 +25,7 @@ interface IAdmin extends Document {
   facultyAdvisor: string;
   website: string;
   clerkId: string;
+  emailId: string;
 }
 
 const adminSchema: Schema = new Schema<IAdmin>({
@@ -42,6 +43,7 @@ const adminSchema: Schema = new Schema<IAdmin>({
   facultyAdvisor: { type: String },
   website: { type: String, default: "" },
   clerkId: { type: String, required: true },
+  emailId: { type: String, required: true },
 });
 
 const Admin = mongoose.models.Admin || mongoose.model<IAdmin>("Admin", adminSchema);
