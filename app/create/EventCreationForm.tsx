@@ -463,7 +463,7 @@ const EventCreationForm: React.FC = () => {
           </div> */}
 
           {/* additional info */}
-          <div>
+          <div data-color-mode="light">
             <Label htmlFor="additionalInfo">Additional Information</Label>
             <MDEditor
               value={eventData.additionalInfo}
