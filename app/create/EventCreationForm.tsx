@@ -230,7 +230,7 @@ const EventCreationForm: React.FC = () => {
           </div>
 
           {/* description */}
-          <div>
+          {/* <div>
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
@@ -238,7 +238,7 @@ const EventCreationForm: React.FC = () => {
               value={eventData.description}
               onChange={handleInputChange}
             />
-          </div>
+          </div> */}
 
           {/* date */}
           <div>

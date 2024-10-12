@@ -3,7 +3,6 @@ import mongoose, { Document, Schema, Model } from "mongoose";
 interface IEvent extends Document {
   title: string;
   subtitle: string;
-  description: string;
   date: Date;
   mode: string;
   location: string;
@@ -23,12 +22,13 @@ interface IEvent extends Document {
   likeCounter: number; // New field
   registrationOpenTill: Date; // New field
   additionalInfo: string; // New field
+  ownerName: string;
+  ownerLogo: string;
 }
 
 const eventSchema: Schema<IEvent> = new Schema({
   title: { type: String, required: true },
   subtitle: { type: String, required: true },
-  description: { type: String, required: true },
   date: { type: Date, required: true },
   mode: { type: String, required: true },
   location: {
@@ -60,6 +60,8 @@ const eventSchema: Schema<IEvent> = new Schema({
   likeCounter: { type: Number, default: 0 }, // New field
   registrationOpenTill: { type: Date }, // New field
   additionalInfo: { type: String }, // New field
+  ownerName: { type: String, required: true },
+  ownerLogo: { type: String, required: true },
 });
 
 // Check if the model is already registered to avoid OverwriteModelError
