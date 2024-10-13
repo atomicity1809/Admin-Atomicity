@@ -22,6 +22,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
 import { toast, Toaster } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 const MDPreview = dynamic(
@@ -198,10 +199,11 @@ const EventCreationForm: React.FC = () => {
   };
 
   return (
-    <div className="grid md:grid-cols-2 gap-6 p-6">
+    <div className="grid md:grid-cols-2 gap-6 p-6 h-[calc(100vh-64px)]">
+      <ScrollArea className="h-full pr-4">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="flex items-center gap-2">
-          <Link href={"/events"}>
+          <Link href={"/dashboard"}>
             <ArrowLeft />
           </Link>
           <h2 className="text-2xl font-bold">Create Event</h2>
@@ -496,8 +498,10 @@ const EventCreationForm: React.FC = () => {
           </Button>
         </div>
       </form>
+      </ScrollArea>
 
       {/* PREVIEW SECTION */}
+      <ScrollArea className="h-full pl-4">
       <div className="space-y-6">
         <h2 className="text-2xl font-bold">Event Preview</h2>
         <p className="flex justify-center gap-2 items-center text-xs">
@@ -602,6 +606,7 @@ const EventCreationForm: React.FC = () => {
           </div>
         </div>
       </div>
+      </ScrollArea>
     </div>
   );
 };

@@ -52,30 +52,12 @@ export async function PUT(req: NextRequest, { params }: { params: { slug: string
       );
     }
 
-    const { 
-      bio, 
-      coverImage, 
-      membershipForm, 
-      socialMediaLinks, 
-      facultyAdvisor, 
-      website, 
-      aboutUs 
-    } = await req.json();
+    const updatedData = await req.json();
 
-    // Find the admin by clerkId and update all fields
+    // Find the admin by clerkId and update all provided fields
     const updatedAdmin = await Admin.findOneAndUpdate(
       { clerkId: clerkId },
-      { 
-        $set: { 
-          bio, 
-          coverImage, 
-          membershipForm, 
-          socialMediaLinks, 
-          facultyAdvisor, 
-          website, 
-          aboutUs 
-        } 
-      },
+      { $set: updatedData },
       { new: true, runValidators: true }
     );
 

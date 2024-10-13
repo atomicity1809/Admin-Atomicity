@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { UserButton, useUser } from '@clerk/nextjs';
-import { Home, Calendar, Users, Settings, AlertCircle, CheckCircle, Clock, Menu, X } from 'lucide-react';
+import { Home, Calendar, Users, Settings, AlertCircle, CheckCircle, Clock, Menu, X, BarChart, Club } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -25,7 +25,9 @@ export function Layout({ children }: LayoutProps) {
 
   const menuItems = [
     { icon: Home, label: 'Dashboard', href: '/dashboard' },
+    { icon: Club, label: 'ClubPage', href: '/dashboard/clubpage' },
     { icon: Calendar, label: 'Events', href: '/dashboard/events' },
+    { icon: BarChart, label: 'Analytics', href: '/dashboard/analytics' },
     { icon: Users, label: 'Users', href: '/dashboard/users' },
     { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
   ];
@@ -87,24 +89,25 @@ export function Layout({ children }: LayoutProps) {
       </div>
       <nav className="mt-6 flex-grow">
         {menuItems.map((item) => {
-          const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
+          const isActive = pathname === item.href || 
+                           (item.href !== '/dashboard' && pathname?.startsWith(item.href));
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center px-4 py-2 mt-2 text-gray-600 hover:bg-gray-200 ${
-                isActive ? 'bg-gray-200' : ''
+              className={`flex items-center px-4 py-2 mt-2 text-gray-600 hover:bg-gray-200 transition-colors duration-200 ${
+                isActive ? 'bg-purple-100 text-purple-700 font-medium' : ''
               }`}
               onClick={() => setIsSidebarOpen(false)}
             >
-              <item.icon className="w-5 h-5 mr-2" />
+              <item.icon className={`w-5 h-5 mr-2 ${isActive ? 'text-purple-700' : ''}`} />
               {item.label}
             </Link>
           );
         })}
       </nav>
       <div className="p-4">
-        <UserButton afterSignOutUrl="/" />
+        <UserButton/>
       </div>
     </aside>
   );
@@ -118,7 +121,7 @@ export function Layout({ children }: LayoutProps) {
             {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
           <h1 className="text-2xl font-thin border-[1px] border-purple-500 bg-purple-200 px-1 rounded-xl">Atomi<span className='font-semibold'>City</span></h1>
-          <UserButton afterSignOutUrl="/" />
+          <UserButton/>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           {children}

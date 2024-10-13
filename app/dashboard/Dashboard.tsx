@@ -12,6 +12,7 @@ import { PlusIcon, DownloadIcon, Mail, Globe, Users } from 'lucide-react';
 import { StatCard } from './StatCard';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Event {
   _id: string;
@@ -30,6 +31,33 @@ interface ClubInfo {
   emailId: string;
   bio: string;
 }
+
+const SkeletonStatCard = () => (
+  <Card>
+    <CardContent className="p-6">
+      <Skeleton className="h-8 w-1/2 mb-2" />
+      <Skeleton className="h-10 w-1/3" />
+    </CardContent>
+  </Card>
+);
+
+const SkeletonClubInfo = () => (
+  <Card className="mb-8 overflow-hidden">
+    <div className="relative h-40 bg-purple-200 border-purple-500 border-2 rounded-xl">
+      <div className="absolute bottom-0 left-0 right-0 p-4 flex items-center space-x-4">
+        <Skeleton className="h-24 w-24 rounded-full" />
+        <div>
+          <Skeleton className="h-8 w-48 mb-2" />
+          <Skeleton className="h-6 w-24" />
+        </div>
+      </div>
+    </div>
+    <CardContent className="pt-6 bg-slate-100">
+      <Skeleton className="h-4 w-full mb-2" />
+      <Skeleton className="h-4 w-3/4" />
+    </CardContent>
+  </Card>
+);
 
 export default function Dashboard() {
   const router = useRouter();
@@ -84,45 +112,54 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {clubInfo && (
-          <Card className="mb-8 overflow-hidden">
-            <div className="relative h-40 bg-purple-200 border-purple-500 border-2 rounded-xl">
-              <div className="absolute bottom-0 left-0 right-0 p-4 flex items-center space-x-4">
-                <Avatar className="h-24 w-24 border-4 border-white">
-                  <AvatarImage src={clubInfo.logo} alt={clubInfo.clubName} />
-                  <AvatarFallback className="text-2xl font-bold text-black">{clubInfo.clubName.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <h2 className="text-3xl font-bold text-purple-500">{clubInfo.clubName}</h2>
-                  <Badge variant="secondary" className="mt-2">{clubInfo.type}</Badge>
+        {loading ? <SkeletonClubInfo /> : (
+          clubInfo && (
+            <Card className="mb-8 overflow-hidden">
+              <div className="relative h-40 bg-purple-200 border-purple-500 border-2 rounded-xl">
+                <div className="absolute bottom-0 left-0 right-0 p-4 flex items-center space-x-4">
+                  <Avatar className="h-24 w-24 border-4 border-white">
+                    <AvatarImage src={clubInfo.logo} alt={clubInfo.clubName} />
+                    <AvatarFallback className="text-2xl font-bold text-black">{clubInfo.clubName.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h2 className="text-3xl font-bold text-purple-500">{clubInfo.clubName}</h2>
+                    <Badge variant="secondary" className="mt-2">{clubInfo.type}</Badge>
+                  </div>
                 </div>
               </div>
-            </div>
-            <CardContent className="pt-6 bg-slate-100">
-              <div className="flex flex-wrap gap-6">
-                <div className="flex items-center space-x-2">
-                  <Mail className="h-5 w-5 text-muted-foreground" />
-                  <span>{clubInfo.emailId}</span>
+              <CardContent className="pt-6 bg-slate-100">
+                <div className="flex flex-wrap gap-6">
+                  <div className="flex items-center space-x-2">
+                    <Mail className="h-5 w-5 text-muted-foreground" />
+                    <span>{clubInfo.emailId}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Users className="h-5 w-5 text-muted-foreground" />
+                    <span>{totalRegistrations} Members</span>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Users className="h-5 w-5 text-muted-foreground" />
-                  <span>{totalRegistrations} Members</span>
-                </div>
-              </div>
-              {clubInfo.bio && (
-                <p className="mt-4 text-muted-foreground">{clubInfo.bio}</p>
-              )}
-              {!clubInfo.bio && (
-                <p className="mt-4 text-muted-foreground">Welcome to our club! We're dedicated to fostering innovation and knowledge in electronics and communication.</p>
-              )}
-            </CardContent>
-          </Card>
+                <p className="mt-4 text-muted-foreground">
+                  {clubInfo.bio || "Welcome to our club! We're dedicated to fostering innovation and knowledge in electronics and communication."}
+                </p>
+              </CardContent>
+            </Card>
+          )
         )}
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
-          <StatCard title="Total Events" value={totalEvents} />
-          <StatCard title="Active Events" value={activeEvents} />
-          <StatCard title="Total Registrations" value={totalRegistrations} />
+          {loading ? (
+            <>
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+            </>
+          ) : (
+            <>
+              <StatCard title="Total Events" value={totalEvents} />
+              <StatCard title="Active Events" value={activeEvents} />
+              <StatCard title="Total Registrations" value={totalRegistrations} />
+            </>
+          )}
         </div>
 
         <Tabs defaultValue="all" className="space-y-4">
@@ -138,7 +175,15 @@ export default function Dashboard() {
                 <CardDescription>A list of all your events.</CardDescription>
               </CardHeader>
               <CardContent>
-                <DataTable columns={columns} data={events} />
+                {loading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : (
+                  <DataTable columns={columns} data={events} />
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -149,10 +194,17 @@ export default function Dashboard() {
                 <CardDescription>Currently active events.</CardDescription>
               </CardHeader>
               <CardContent>
-                <DataTable 
-                  columns={columns} 
-                  data={events.filter(event => event.isAvailableToReg)} 
-                />
+                {loading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : (
+                  <DataTable 
+                    columns={columns} 
+                    data={events.filter(event => event.isAvailableToReg)} 
+                  />
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -163,10 +215,17 @@ export default function Dashboard() {
                 <CardDescription>Events that have already occurred.</CardDescription>
               </CardHeader>
               <CardContent>
-                <DataTable 
-                  columns={columns} 
-                  data={events.filter(event => !event.isAvailableToReg)} 
-                />
+                {loading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : (
+                  <DataTable 
+                    columns={columns} 
+                    data={events.filter(event => !event.isAvailableToReg)} 
+                  />
+                )}
               </CardContent>
             </Card>
           </TabsContent>
