@@ -9,8 +9,11 @@ interface IUser extends Document {
     mobileNo: string;
     institute: string;
     interestedCategories: string[];
-    interestedEvents: string[]; // New field
-    registeredEvents: String[];
+    interestedEvents: string[];
+    registeredEvents: Array<{
+        eventId: string;
+        confirmationNumber: string;
+    }>;
     pastEvents: String[];
     certificates: string[];
 }
@@ -23,8 +26,11 @@ const userSchema: Schema<IUser> = new Schema<IUser>({
     mobileNo: { type: String, required: true },
     institute: { type: String, required: true },
     interestedCategories: { type: [String], required: true },
-    interestedEvents: { type: [String], ref: 'Event' }, // New field
-    registeredEvents: { type: [String], ref: 'Event' },
+    interestedEvents: { type: [String], ref: 'Event' },
+    registeredEvents: [{
+        eventId: { type: String, ref: 'Event' },
+        confirmationNumber: { type: String }
+    }],
     pastEvents: { type: [String], ref: 'Event' },
     certificates: { type: [String] },
 });
