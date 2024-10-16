@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export type Event = {
-  _id: string;
+  id: string;
   title: string;
   date: string;
   location: string;
@@ -75,7 +75,7 @@ export const columns: ColumnDef<Event>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(event._id)}>
+            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(event.id)}>
               Copy event ID
             </DropdownMenuItem>
             <DropdownMenuItem>View details</DropdownMenuItem>

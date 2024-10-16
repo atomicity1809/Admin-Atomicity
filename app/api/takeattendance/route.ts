@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     // Destructure data from the body
     const { eventId, userId, conf_number } = body;
     console.log("in backend: ", eventId, userId, conf_number);
-    if (!eventId || !userId || !conf_number) {
+    if (eventId=="undefined" || userId=="undefined" || conf_number=="undefined") {
       return NextResponse.json(
         { message: "Data insufficient" },
         { status: 500 }

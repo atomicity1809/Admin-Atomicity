@@ -40,6 +40,7 @@ type DataTableRowData = {
 interface DataTableProps<TData extends DataTableRowData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  
 }
 
 export function DataTable<TData extends DataTableRowData, TValue>({
@@ -53,6 +54,8 @@ export function DataTable<TData extends DataTableRowData, TValue>({
   const handleRowClick = (id: string) => {
     router.push(`/event/${id}`);
   };
+
+  
 
   const table = useReactTable({
     data,

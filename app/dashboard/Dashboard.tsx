@@ -21,21 +21,23 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Event {
-  _id: string;
+  id: string;
   title: string;
   date: string;
   location: string;
   registeredUsers: string[];
   isAvailableToReg: boolean;
+  [key: string]: any;
 }
 
 interface ClubInfo {
-  _id: string;
+  id: string;
   clubName: string;
   type: string;
   logo: string;
   emailId: string;
   bio: string;
+  [key: string]: any;
 }
 
 const SkeletonStatCard = () => (
@@ -77,8 +79,8 @@ export default function Dashboard() {
       if (!user) return;
       try {
         const [eventsResponse, clubInfoResponse] = await Promise.all([
-          fetch(`/api/events/${user.id}`),
-          fetch(`/api/admindetails/${user.id}`),
+          fetch(`/api/events/${user?.id}`),
+          fetch(`/api/admindetails/${user?.id}`),
         ]);
         const eventsData = await eventsResponse.json();
         const clubInfoData = await clubInfoResponse.json();
