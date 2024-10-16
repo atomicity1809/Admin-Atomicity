@@ -53,7 +53,7 @@ const EventPage = () => {
   }
 
   const handleAttendanceClick = () => {
-    router.push(`/event/${event.id}/attendance`);
+    router.push(`/event/${eventId}/attendance`);
   };
 
   return (
