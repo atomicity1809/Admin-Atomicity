@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ObjectId } from "mongoose";
 
 interface IEvent {
-  _id: ObjectId;
+  id: string;
   title: string;
   subtitle: string;
   date: Date;
@@ -53,7 +53,7 @@ const EventPage = () => {
   }
 
   const handleAttendanceClick = () => {
-    router.push(`/event/${event._id}/attendance`);
+    router.push(`/event/${event.id}/attendance`);
   };
 
   return (

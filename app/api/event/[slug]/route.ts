@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
   const { pathname } = new URL(req.url);
   console.log("pathname: ", pathname);
   const slug = pathname.split("/").pop();
+  console.log(slug, typeof slug);
 
   try {
     const event = await Event.find({ _id: slug });
