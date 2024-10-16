@@ -1,17 +1,23 @@
-"use client"
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useUser } from '@clerk/nextjs';
-import { Layout } from './Layout';
-import { DataTable } from './DataTable';
-import { columns } from './columns';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusIcon, DownloadIcon, Mail, Globe, Users } from 'lucide-react';
-import { StatCard } from './StatCard';
+"use client";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
+import { Layout } from "./Layout";
+import { DataTable } from "./DataTable";
+import { columns } from "./columns";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PlusIcon, DownloadIcon, Mail, Globe, Users } from "lucide-react";
+import { StatCard } from "./StatCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from '@/components/ui/badge';
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Event {
@@ -72,11 +78,11 @@ export default function Dashboard() {
       try {
         const [eventsResponse, clubInfoResponse] = await Promise.all([
           fetch(`/api/events/${user.id}`),
-          fetch(`/api/admindetails/${user.id}`)
+          fetch(`/api/admindetails/${user.id}`),
         ]);
         const eventsData = await eventsResponse.json();
         const clubInfoData = await clubInfoResponse.json();
-        
+
         if (eventsData.success) {
           setEvents(eventsData.data);
         }
@@ -84,7 +90,7 @@ export default function Dashboard() {
           setClubInfo(clubInfoData.data);
         }
       } catch (error) {
-        console.error('Failed to fetch data:', error);
+        console.error("Failed to fetch data:", error);
       } finally {
         setLoading(false);
       }
@@ -94,8 +100,11 @@ export default function Dashboard() {
   }, [user]);
 
   const totalEvents = events.length;
-  const activeEvents = events.filter(e => e.isAvailableToReg).length;
-  const totalRegistrations = events.reduce((sum, event) => sum + event.registeredUsers.length, 0);
+  const activeEvents = events.filter((e) => e.isAvailableToReg).length;
+  const totalRegistrations = events.reduce(
+    (sum, event) => sum + event.registeredUsers.length,
+    0
+  );
 
   return (
     <Layout>
@@ -106,24 +115,32 @@ export default function Dashboard() {
             <Button variant="outline" onClick={() => {}}>
               <DownloadIcon className="mr-2 h-4 w-4" /> Export
             </Button>
-            <Button onClick={() => router.push('/create')}>
+            <Button onClick={() => router.push("/create")}>
               <PlusIcon className="mr-2 h-4 w-4" /> Create Event
             </Button>
           </div>
         </div>
 
-        {loading ? <SkeletonClubInfo /> : (
+        {loading ? (
+          <SkeletonClubInfo />
+        ) : (
           clubInfo && (
             <Card className="mb-8 overflow-hidden">
               <div className="relative h-40 bg-purple-200 border-purple-500 border-2 rounded-xl">
                 <div className="absolute bottom-0 left-0 right-0 p-4 flex items-center space-x-4">
                   <Avatar className="h-24 w-24 border-4 border-white">
                     <AvatarImage src={clubInfo.logo} alt={clubInfo.clubName} />
-                    <AvatarFallback className="text-2xl font-bold text-black">{clubInfo.clubName.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="text-2xl font-bold text-black">
+                      {clubInfo.clubName.charAt(0)}
+                    </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h2 className="text-3xl font-bold text-purple-500">{clubInfo.clubName}</h2>
-                    <Badge variant="secondary" className="mt-2">{clubInfo.type}</Badge>
+                    <h2 className="text-3xl font-bold text-purple-500">
+                      {clubInfo.clubName}
+                    </h2>
+                    <Badge variant="secondary" className="mt-2">
+                      {clubInfo.type}
+                    </Badge>
                   </div>
                 </div>
               </div>
@@ -139,7 +156,8 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <p className="mt-4 text-muted-foreground">
-                  {clubInfo.bio || "Welcome to our club! We're dedicated to fostering innovation and knowledge in electronics and communication."}
+                  {clubInfo.bio ||
+                    "Welcome to our club! We're dedicated to fostering innovation and knowledge in electronics and communication."}
                 </p>
               </CardContent>
             </Card>
@@ -157,7 +175,10 @@ export default function Dashboard() {
             <>
               <StatCard title="Total Events" value={totalEvents} />
               <StatCard title="Active Events" value={activeEvents} />
-              <StatCard title="Total Registrations" value={totalRegistrations} />
+              <StatCard
+                title="Total Registrations"
+                value={totalRegistrations}
+              />
             </>
           )}
         </div>
@@ -200,9 +221,9 @@ export default function Dashboard() {
                     <Skeleton className="h-10 w-full" />
                   </div>
                 ) : (
-                  <DataTable 
-                    columns={columns} 
-                    data={events.filter(event => event.isAvailableToReg)} 
+                  <DataTable
+                    columns={columns}
+                    data={events.filter((event) => event.isAvailableToReg)}
                   />
                 )}
               </CardContent>
@@ -212,7 +233,9 @@ export default function Dashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Past Events</CardTitle>
-                <CardDescription>Events that have already occurred.</CardDescription>
+                <CardDescription>
+                  Events that have already occurred.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {loading ? (
@@ -221,9 +244,9 @@ export default function Dashboard() {
                     <Skeleton className="h-10 w-full" />
                   </div>
                 ) : (
-                  <DataTable 
-                    columns={columns} 
-                    data={events.filter(event => !event.isAvailableToReg)} 
+                  <DataTable
+                    columns={columns}
+                    data={events.filter((event) => !event.isAvailableToReg)}
                   />
                 )}
               </CardContent>
