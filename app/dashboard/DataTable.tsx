@@ -33,7 +33,7 @@ import { useRouter } from "next/navigation";
 
 // Define a type that includes the _id property
 type DataTableRowData = {
-  _id: string;
+  id: string;
   [key: string]: any; // Allow for other properties
 };
 
@@ -50,8 +50,8 @@ export function DataTable<TData extends DataTableRowData, TValue>({
   const [globalFilter, setGlobalFilter] = React.useState("");
   const router = useRouter();
 
-  const handleRowClick = (_id: string) => {
-    router.push(`/event/${_id}`);
+  const handleRowClick = (id: string) => {
+    router.push(`/event/${id}`);
   };
 
   const table = useReactTable({
