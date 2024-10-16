@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   ColumnDef,
   flexRender,
@@ -11,7 +11,7 @@ import {
   Header,
   HeaderGroup,
   Row,
-} from '@tanstack/react-table';
+} from "@tanstack/react-table";
 import {
   Table,
   TableBody,
@@ -19,28 +19,40 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useRouter } from "next/navigation";
 
-interface DataTableProps<TData extends RowData, TValue> {
+// Define a type that includes the _id property
+type DataTableRowData = {
+  _id: string;
+  [key: string]: any; // Allow for other properties
+};
+
+interface DataTableProps<TData extends DataTableRowData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
 }
 
-export function DataTable<TData extends RowData, TValue>({
+export function DataTable<TData extends DataTableRowData, TValue>({
   columns,
   data,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = React.useState('');
+  const [globalFilter, setGlobalFilter] = React.useState("");
+  const router = useRouter();
+
+  const handleRowClick = (_id: string) => {
+    router.push(`/event/${_id}`);
+  };
 
   const table = useReactTable({
     data,
@@ -61,7 +73,7 @@ export function DataTable<TData extends RowData, TValue>({
       <div className="flex items-center py-4">
         <Input
           placeholder="Search all columns..."
-          value={globalFilter ?? ''}
+          value={globalFilter ?? ""}
           onChange={(event) => setGlobalFilter(event.target.value)}
           className="max-w-sm"
         />
@@ -69,9 +81,9 @@ export function DataTable<TData extends RowData, TValue>({
       <div className="rounded-md border">
         <Table>
           <TableHeader>
-            {table.getHeaderGroups().map((headerGroup: HeaderGroup<TData>) => (
+            {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header: Header<TData, unknown>) => (
+                {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
@@ -86,21 +98,29 @@ export function DataTable<TData extends RowData, TValue>({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row: Row<TData>) => (
+              table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
+                  data-state={row.getIsSelected() && "selected"}
+                  className="cursor-pointer"
+                  onClick={() => handleRowClick(row.original._id)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   No results.
                 </TableCell>
               </TableRow>
@@ -108,6 +128,8 @@ export function DataTable<TData extends RowData, TValue>({
           </TableBody>
         </Table>
       </div>
+
+      {/* pagination */}
       <div className="flex items-center justify-between space-x-2 py-4">
         <Select
           value={`${table.getState().pagination.pageSize}`}
@@ -127,7 +149,7 @@ export function DataTable<TData extends RowData, TValue>({
           </SelectContent>
         </Select>
         <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-          Page {table.getState().pagination.pageIndex + 1} of{' '}
+          Page {table.getState().pagination.pageIndex + 1} of{" "}
           {table.getPageCount()}
         </div>
         <div className="flex items-center space-x-2">
