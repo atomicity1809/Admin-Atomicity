@@ -40,6 +40,7 @@ type DataTableRowData = {
 interface DataTableProps<TData extends DataTableRowData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  
 }
 
 export function DataTable<TData extends DataTableRowData, TValue>({
@@ -53,6 +54,8 @@ export function DataTable<TData extends DataTableRowData, TValue>({
   const handleRowClick = (id: string) => {
     router.push(`/event/${id}`);
   };
+
+  
 
   const table = useReactTable({
     data,
@@ -103,7 +106,7 @@ export function DataTable<TData extends DataTableRowData, TValue>({
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
                   className="cursor-pointer"
-                  onClick={() => handleRowClick(row.original._id)}
+                  onClick={() => handleRowClick(row.original.id)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

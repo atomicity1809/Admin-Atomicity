@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export type Event = {
-  _id: string;
+  id: string;
   title: string;
   date: string;
   location: string;
