@@ -1,5 +1,5 @@
 import React from "react";
-import AttendanceBlock from "./attendance";
+import AttendanceBlock from "./Attendance";
 const page = () => {
   return (
     <div>

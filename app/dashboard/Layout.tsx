@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { UserButton, useUser } from '@clerk/nextjs';
-import { Home, Calendar, Users, Settings, AlertCircle, CheckCircle, Clock, Menu, X, BarChart, Club, BookUserIcon } from 'lucide-react';
+import { Home, Calendar, Users, Settings, AlertCircle, CheckCircle, Clock, Menu, X, BarChart, Club, BookUserIcon, Navigation } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -25,7 +25,8 @@ export function Layout({ children }: LayoutProps) {
 
   const menuItems = [
     { icon: Home, label: 'Dashboard', href: '/dashboard' },
-    { icon: Club, label: 'ClubPage', href: '/dashboard/clubpage' },
+    { icon: Club, label: 'Club Page', href: '/dashboard/clubpage' },
+    { icon: Navigation, label: 'Venue Reservation', href: '/dashboard/venue' },
     { icon: Calendar, label: 'Events', href: '/dashboard/events' },
     { icon: BookUserIcon, label: 'Attendance', href: '/dashboard/attendance' },
     { icon: BarChart, label: 'Analytics', href: '/dashboard/analytics' },

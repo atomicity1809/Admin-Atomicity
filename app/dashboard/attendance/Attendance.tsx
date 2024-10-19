@@ -1,112 +1,102 @@
-"use client"
+"use client";
+import { useState } from "react";
+import { Scanner } from "@yudiel/react-qr-scanner";
+import Attendance from "@/models/attendance";
+import { toast } from "sonner";
 
-import React, { useState, useEffect } from 'react';
-import { useZxing } from "react-zxing";
+const AttendanceBlock = () => {
+  const [data, setData] = useState("");
+  const [isScanning, setIsScanning] = useState(false); // State to control camera visibility
 
-interface UserDetails {
-  name: string;
-  email: string;
-  eventName: string;
-  confirmationNumber: string;
-}
+  const handleScan = async (result: any) => {
+    if (result && result.length > 0) {
+      const scannedData = result[0].rawValue;
+      console.log("Scanned Data:", scannedData); // Log the scanned data
+      setData(scannedData); // Store the scanned data
 
-const Attendance: React.FC = () => {
-  const [scanResult, setScanResult] = useState<string | null>(null);
-  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
+      // Split the data into conf_number and userid
+      const [conf_number, userId] = scannedData.split(",");
+      const eventId = "123"; // Default event ID
+      if (!conf_number || !userId) return "Not found";
 
-  const { ref } = useZxing({
-    onDecodeResult(result) {
-      setScanResult(result.getText());
-      setIsScanning(false);
-    },
-    onError(error) {
-      console.error("Scanner error:", error);
-      setError("Error scanning QR code. Please try again.");
-      setIsScanning(false);
-    },
-  });
+      // Prepare the request body
+      const attendanceData = {
+        eventId,
+        userId,
+        conf_number,
+      };
 
-  useEffect(() => {
-    if (scanResult) {
-      fetchUserDetails(scanResult);
-    }
-  }, [scanResult]);
+      try {
+        // Make a POST request to /takeattendance
+        const response = await fetch("/api/takeattendance", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(attendanceData),
+        });
 
-  const fetchUserDetails = async (confirmationNumber: string) => {
-    try {
-      setError(null);
-      // Simulating API call
-      setTimeout(() => {
-        const mockUserDetails: UserDetails = {
-          name: "John Doe",
-          email: "john@example.com",
-          eventName: "Tech Conference 2023",
-          confirmationNumber: confirmationNumber
-        };
-        setUserDetails(mockUserDetails);
-      }, 1000);
-    } catch (error) {
-      setError('Failed to fetch user details. Please try again.');
-      setUserDetails(null);
+        if (response.ok) {
+          console.log("Attendance marked successfully!");
+          toast.success("Attendance marked successfully!");
+        } else {
+          const errorData = await response.json(); // Get the error response
+          console.error("Failed to mark attendance:", errorData.message);
+
+          // Check if the message indicates attendance is already marked
+          if (response.status === 300) {
+            toast.error("Attendance already marked for this event and user.");
+          } else if (response.status === 500) {
+            toast.error("Data insufficient");
+
+          } else {
+            toast.error("Failed to mark attendance.");
+          }
+        }
+      } catch (error) {
+        console.error("Error in marking attendance:", error);
+        toast.error("Error in marking attendance");
+      }
     }
   };
 
-  const handleStartScanning = () => {
-    setIsScanning(true);
-    setScanResult(null);
-    setUserDetails(null);
-    setError(null);
+  const handleError = (error: any) => {
+    console.error("Error scanning QR code:", error);
   };
 
-  const handleStopScanning = () => {
-    setIsScanning(false);
+  const toggleScanner = () => {
+    setIsScanning((prev) => !prev); // Toggle camera on/off
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Event Attendance</h1>
-      
-      <div className="mb-4">
-        <h2 className="text-xl font-semibold mb-2">Scan QR Code</h2>
-        {!isScanning ? (
-          <button 
-            onClick={handleStartScanning}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Start Scanning
-          </button>
-        ) : (
-          <div className="w-full max-w-sm mx-auto">
-            <video ref={ref} className="w-full" />
-            <button 
-              onClick={handleStopScanning}
-              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mt-2"
-            >
-              Stop Scanning
-            </button>
+    <div className="flex flex-col items-center justify-center min-h-screen p-4">
+      <h1 className="text-3xl font-bold mb-6">Take Attendance</h1>
+      <button
+        onClick={toggleScanner}
+        className="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300"
+      >
+        {isScanning ? "Close Camera" : "Take Attendance"}
+      </button>
+
+      {isScanning && (
+        <div className="mt-6">
+          <div className="w-64 h-64 border border-gray-300 rounded-lg overflow-hidden">
+            <Scanner
+              onScan={handleScan}
+              onError={handleError}
+              formats={["qr_code"]}
+              scanDelay={300}
+              classNames={{
+                container: "w-full h-full", // Use classNames instead of className
+              }}
+            />
           </div>
-        )}
-      </div>
-
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-          <span className="block sm:inline">{error}</span>
         </div>
       )}
 
-      {userDetails && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
-          <h2 className="text-xl font-semibold mb-2">Attendee Details</h2>
-          <p><strong>Name:</strong> {userDetails.name}</p>
-          <p><strong>Email:</strong> {userDetails.email}</p>
-          <p><strong>Event:</strong> {userDetails.eventName}</p>
-          <p><strong>Confirmation Number:</strong> {userDetails.confirmationNumber}</p>
-        </div>
-      )}
+      {isScanning && <p className="mt-4 text-lg">Scanned Data: {data}</p>}
     </div>
   );
 };
 
-export default Attendance;
+export default AttendanceBlock;
