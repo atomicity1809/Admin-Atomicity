@@ -33,6 +33,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
+    "file-saver": "^2.0.5",
     "framer-motion": "^11.9.0",
     "lucide-react": "^0.441.0",
     "mongoose": "^8.6.3",
@@ -52,6 +53,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^20",
     "@types/nodemailer": "^6.4.16",
     "@types/react": "^18",
