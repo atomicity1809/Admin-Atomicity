@@ -28,9 +28,9 @@ export function Layout({ children }: LayoutProps) {
     { icon: Club, label: 'Club Page', href: '/dashboard/clubpage' },
     { icon: Navigation, label: 'Venue Reservation', href: '/dashboard/venue' },
     { icon: Calendar, label: 'Events', href: '/dashboard/events' },
-    { icon: BookUserIcon, label: 'Attendance', href: '/dashboard/attendance' },
+    // { icon: BookUserIcon, label: 'Attendance', href: '/dashboard/attendance' },
     { icon: BarChart, label: 'Analytics', href: '/dashboard/analytics' },
-    { icon: BarChart, label: 'Attendance', href: '/dashboard/attendance' },
+    // { icon: BarChart, label: 'Attendance', href: '/dashboard/attendance' },
     { icon: Users, label: 'Users', href: '/dashboard/users' },
     { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
   ];
