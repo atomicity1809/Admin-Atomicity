@@ -1,3 +1,5 @@
+"use client"
+
 import React from "react";
 import {
   ColumnDef,
@@ -7,10 +9,6 @@ import {
   getPaginationRowModel,
   SortingState,
   getSortedRowModel,
-  RowData,
-  Header,
-  HeaderGroup,
-  Row,
 } from "@tanstack/react-table";
 import {
   Table,
@@ -30,36 +28,53 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
+import { Eye } from "lucide-react";
 
-// Define a type that includes the _id property
 type DataTableRowData = {
   id: string;
-  [key: string]: any; // Allow for other properties
+  [key: string]: any;
 };
 
 interface DataTableProps<TData extends DataTableRowData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  
 }
 
-export function DataTable<TData extends DataTableRowData, TValue>({
+const DataTable = <TData extends DataTableRowData, TValue>({
   columns,
   data,
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TData, TValue>) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
   const router = useRouter();
 
   const handleRowClick = (id: string) => {
-    router.push(`/event/${id}`);
+    router.push(`/dashboard/events/${id}`);
   };
 
-  
+  // Add Details button column
+  const columnsWithDetails = [
+    ...columns,
+    {
+      id: 'actions',
+      header: '',
+      cell: ({ row } : any) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleRowClick(row.original.id)}
+          className="flex items-center gap-2 hover:bg-gray-100"
+        >
+          <Eye className="h-4 w-4" />
+          Details
+        </Button>
+      ),
+    },
+  ];
 
   const table = useReactTable({
     data,
-    columns,
+    columns: columnsWithDetails,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
@@ -105,8 +120,6 @@ export function DataTable<TData extends DataTableRowData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="cursor-pointer"
-                  onClick={() => handleRowClick(row.original._id)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -121,7 +134,7 @@ export function DataTable<TData extends DataTableRowData, TValue>({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={columnsWithDetails.length}
                   className="h-24 text-center"
                 >
                   No results.
@@ -132,7 +145,6 @@ export function DataTable<TData extends DataTableRowData, TValue>({
         </Table>
       </div>
 
-      {/* pagination */}
       <div className="flex items-center justify-between space-x-2 py-4">
         <Select
           value={`${table.getState().pagination.pageSize}`}
@@ -176,4 +188,6 @@ export function DataTable<TData extends DataTableRowData, TValue>({
       </div>
     </div>
   );
-}
+};
+
+export default DataTable;

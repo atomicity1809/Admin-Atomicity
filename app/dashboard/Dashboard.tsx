@@ -3,8 +3,8 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { Layout } from "./Layout";
-import { DataTable } from "./DataTable";
-import { columns } from "./columns";
+import DataTable from "./events/DataTable";
+import { columns } from "./events/columns";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlusIcon, DownloadIcon, Mail, Globe, Users } from "lucide-react";
-import { StatCard } from "./StatCard";
+import StatCard from "./StatCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -67,7 +67,7 @@ const SkeletonClubInfo = () => (
   </Card>
 );
 
-export default function Dashboard() {
+const Dashboard = () => {
   const router = useRouter();
   const { user } = useUser();
   const [events, setEvents] = useState<Event[]>([]);
@@ -185,7 +185,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        <Tabs defaultValue="all" className="space-y-4">
+        {/* <Tabs defaultValue="all" className="space-y-4">
           <TabsList>
             <TabsTrigger value="all">All Events</TabsTrigger>
             <TabsTrigger value="active">Active</TabsTrigger>
@@ -254,8 +254,10 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
+        </Tabs> */}
       </div>
     </Layout>
   );
 }
+
+export default Dashboard;

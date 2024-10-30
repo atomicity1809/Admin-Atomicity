@@ -1,89 +1,158 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { DataTable } from '../DataTable';
-import { ColumnDef } from '@tanstack/react-table';
-import { Button } from '@/components/ui/button';
-import { PlusIcon } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Layout } from '../Layout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { PlusIcon, Loader2 } from 'lucide-react';
+import DataTable from './DataTable';
+import { columns } from './columns';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
 
 interface Event {
-  id: string;
+  _id: string;
   title: string;
+  subtitle: string;
   date: string;
+  description: string;
   location: string;
-  attendees: number;
-  status: 'upcoming' | 'ongoing' | 'past';
+  time: string;
+  fees: number;
+  maxAllowedParticipants: number;
+  noMaxParticipants: boolean;
+  coverImg: string;
+  isAvailableToReg: boolean;
+  clubName: string;
+  eventType: string;
+  registeredUsers: string[];
 }
 
-const columns: ColumnDef<Event>[] = [
-  {
-    accessorKey: 'title',
-    header: 'Title',
-  },
-  {
-    accessorKey: 'date',
-    header: 'Date',
-  },
-  {
-    accessorKey: 'location',
-    header: 'Location',
-  },
-  {
-    accessorKey: 'attendees',
-    header: 'Attendees',
-  },
-  {
-    accessorKey: 'status',
-    header: 'Status',
-    cell: ({ row }) => {
-      const status = row.getValue('status') as string;
-      return (
-        <span className={`px-2 py-1 rounded-full text-xs ${
-          status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
-          status === 'ongoing' ? 'bg-green-100 text-green-800' :
-          'bg-gray-100 text-gray-800'
-        }`}>
-          {status.charAt(0).toUpperCase() + status.slice(1)}
-        </span>
-      );
-    },
-  },
-];
+interface ClubInfo {
+  clubName: string;
+}
 
-export function Events() {
+const Events = () => {
   const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const { user, isLoaded } = useUser();
 
   useEffect(() => {
-    // Fetch events data here
-    // For now, we'll use mock data
-    const mockEvents: Event[] = [
-      { id: '1', title: 'Tech Conference', date: '2023-08-15', location: 'San Francisco', attendees: 500, status: 'upcoming' },
-      { id: '2', title: 'Hackathon', date: '2023-07-01', location: 'New York', attendees: 200, status: 'ongoing' },
-      { id: '3', title: 'Workshop', date: '2023-06-20', location: 'London', attendees: 50, status: 'past' },
-    ];
-    setEvents(mockEvents);
-  }, []);
+    const fetchEvents = async () => {
+      if (!isLoaded || !user) return;
+
+      try {
+        const response = await fetch(`/api/events/${user.id}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch events');
+        }
+
+        const data = await response.json();
+        if (data.success) {
+          setEvents(data.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch events:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, [user, isLoaded]);
+
+  const handleCreateEvent = () => {
+    router.push('/events/create');
+  };
+
+  // Show loading state while checking authentication or fetching data
+  if (!isLoaded || loading) {
+    return (
+      <Layout>
+        <div className="flex h-[50vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show authentication required message if not authenticated
+  if (!user) {
+    return (
+      <Layout>
+        <div className="flex h-[50vh] flex-col items-center justify-center space-y-4">
+          <h2 className="text-xl font-semibold">Authentication Required</h2>
+          <p className="text-muted-foreground">Please sign in to view events</p>
+          <Button onClick={() => router.push('/sign-in')}>
+            Sign In
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Events</h1>
-        <Button>
-          <PlusIcon className="mr-2 h-4 w-4" /> Create Event
-        </Button>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Events</h1>
+          </div>
+          <Button onClick={handleCreateEvent}>
+            <PlusIcon className="mr-2 h-4 w-4" /> Create Event
+          </Button>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>All Events</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              {events.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-8 text-center">
+                  <Image
+                    src="/empty-state.svg"
+                    alt="No events"
+                    width={200}
+                    height={200}
+                    className="mb-4"
+                  />
+                  <h3 className="text-lg font-semibold">No events found</h3>
+                  <p className="text-muted-foreground">
+                    Create your first event to get started
+                  </p>
+                  <Button
+                    onClick={handleCreateEvent}
+                    className="mt-4"
+                    variant="outline"
+                  >
+                    <PlusIcon className="mr-2 h-4 w-4" />
+                    Create Event
+                  </Button>
+                </div>
+              ) : (
+                <DataTable
+                  columns={columns}
+                  data={events.map(event => ({
+                    id: event._id,
+                    title: event.title,
+                    date: new Date(event.date).toLocaleDateString(),
+                    location: event.location,
+                    registeredUsers: event.registeredUsers,
+                    isAvailableToReg: event.isAvailableToReg
+                  }))}
+                />
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>All Events</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DataTable columns={columns} data={events} />
-        </CardContent>
-      </Card>
-    </div>
     </Layout>
   );
-}
+};
+
+export default Events;

@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 
 import React from "react";
 import { useInView } from "react-intersection-observer";
@@ -12,7 +11,7 @@ import {
   SignInButton,
   SignUpButton,
   UserButton,
-  useUser
+  useUser,
 } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,55 +21,104 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ChevronDown } from "lucide-react";
+import { 
+  ChevronDown, 
+  Rocket, 
+  Users2, 
+  Zap,
+  GitCommitHorizontal,
+  Boxes,
+  Cpu,
+  ArrowRight,
+  Github,
+  Twitter,
+  Linkedin,
+} from "lucide-react";
 import Link from "next/link";
+import { Span } from "next/dist/trace";
+import Image from "next/image";
 
-const HomePage: React.FC = () => {
-  const { user} = useUser();
+const HomePage = () => {
+  const { user } = useUser();
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        staggerChildren: 0.2,
+      },
+    },
+  };
 
-  const [heroRef, heroInView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
-  const [coverRef, coverInView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
-  const [featuresRef, featuresInView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+  };
+
+  const features = [
+    {
+      title: "Atomic Tasks",
+      description: "Break down complex projects into small, manageable atomic units",
+      icon: <Boxes className="w-10 h-10 text-primary" />,
+    },
+    {
+      title: "Real-time Collaboration",
+      description: "Work seamlessly with your team in real-time with live updates",
+      icon: <Users2 className="w-10 h-10 text-primary" />,
+    },
+    {
+      title: "AI-Powered Automation",
+      description: "Let our intelligent system handle repetitive tasks automatically",
+      icon: <Cpu className="w-10 h-10 text-primary" />,
+    },
+  ];
+
+  const stats = [
+    { value: "99.9%", label: "Uptime" },
+    { value: "50K+", label: "Active Users" },
+    { value: "1M+", label: "Tasks Completed" },
+    { value: "24/7", label: "Support" },
+  ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white">
       {/* Navbar */}
-      <nav className="bg-white shadow-sm">
+      <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <span className="text-2xl font-bold text-primary">Atomicity</span>
-              </div>
-            </div>
             <div className="flex items-center">
+              <Image
+              src="/atomicity_logo.png"
+              alt="Atomicity Logo"
+              height={30}
+              width={30}
+              className=" mr-2 border-[1px] border-purple-500 rounded-lg bg-purple-200"
+              />
+              <span className=" text-lg font-thin">Atomi</span>
+              <span className=" text-lg font-bold">City</span>
+            </div>
+            <div className="flex items-center gap-4">
               <ClerkLoaded>
                 <SignedOut>
-                  <Button variant="ghost" className="text-primary mr-2">
+                  <Button variant="ghost" className="text-primary">
                     <SignInButton mode="modal" />
                   </Button>
-                  <Button variant="default">
-                    <SignUpButton mode="modal" fallbackRedirectUrl={"/signup"} />
+                  <Button variant="default" className="bg-primary hover:bg-primary/90">
+                    <SignUpButton mode="modal" />
                   </Button>
                 </SignedOut>
                 <SignedIn>
-                  <div className=" flex items-center gap-2">
-                    <span className=" font-thin">
-                      Welcome <b>{user?.fullName}</b>👋👋
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium">
+                      Welcome back, <span className="text-primary">{user?.firstName}</span> 👋
                     </span>
-                    <UserButton/>
-                    <Link href={"/dashboard"} prefetch>
-                      <Button>
+                    <UserButton />
+                    <Link href="/dashboard">
+                      <Button className="bg-primary hover:bg-primary/90">
                         Dashboard
+                        <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
                     </Link>
                   </div>
@@ -91,121 +139,229 @@ const HomePage: React.FC = () => {
 
       {/* Hero Section */}
       <motion.section
-        ref={heroRef}
-        initial={{ opacity: 0, y: 50 }}
-        animate={heroInView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.5 }}
-        className="bg-primary text-white py-20"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        className="pt-32 pb-20 px-4 sm:px-6 lg:px-8"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl font-extrabold sm:text-5xl md:text-6xl">
-            Welcome to Atomicity
-          </h1>
-          <p className="mt-3 max-w-md mx-auto text-xl sm:text-2xl md:mt-5 md:max-w-3xl">
-            Empowering your workflow with atomic precision.
-          </p>
-          <div className="mt-10">
-            <Button size="lg" variant="secondary">
-              Get Started
-            </Button>
-          </div>
-        </div>
-        <div className="mt-10 flex justify-center">
-          <ChevronDown className="animate-bounce w-10 h-10" />
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            variants={itemVariants}
+            className="text-center space-y-8"
+          >
+            <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-primary/10 text-primary">
+              <Rocket className="w-4 h-4 mr-2" />
+                Welcome to @Admin from AtomiCity
+            </span>
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900">
+              Manage Work with{" "}
+              <span className="text-primary">Atomic Precision</span>
+            </h1>
+            <p className="max-w-2xl mx-auto text-xl text-gray-600">
+              Break down complex projects into atomic tasks, collaborate in real-time, 
+              and let AI automation handle the repetitive work.
+            </p>
+            <div className="flex justify-center gap-4">
+              <Button size="lg" className="bg-primary hover:bg-primary/90">
+                Get Started Free
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              <Button size="lg" variant="outline">
+                Watch Demo
+                <Zap className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </motion.div>
         </div>
       </motion.section>
 
-      {/* Cover Section */}
+      {/* Stats Section */}
       <motion.section
-        ref={coverRef}
-        initial={{ opacity: 0, y: 50 }}
-        animate={coverInView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.5 }}
-        className="py-20 bg-white"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={containerVariants}
+        className="py-20 bg-gray-50"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="lg:text-center">
-            <h2 className="text-base text-primary font-semibold tracking-wide uppercase">Our Mission</h2>
-            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-              Revolutionizing Workflow Management
-            </p>
-            <p className="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
-              Atomicity brings a new level of efficiency and precision to your projects, enabling you to break down complex tasks into manageable, atomic units.
-            </p>
+          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+            {stats.map((stat, index) => (
+              <motion.div
+                key={index}
+                variants={itemVariants}
+                className="text-center"
+              >
+                <div className="text-4xl font-bold text-primary">{stat.value}</div>
+                <div className="mt-2 text-gray-600">{stat.label}</div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </motion.section>
 
       {/* Features Section */}
       <motion.section
-        ref={featuresRef}
-        initial={{ opacity: 0, y: 50 }}
-        animate={featuresInView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.5 }}
-        className="py-20 bg-gray-50"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={containerVariants}
+        className="py-20"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl text-center mb-12">
-            Key Features
-          </h2>
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              { title: "Atomic Tasks", description: "Break down projects into small, manageable units" },
-              { title: "Real-time Collaboration", description: "Work together seamlessly with your team" },
-              { title: "Intelligent Automation", description: "Let AI handle repetitive tasks for you" },
-            ].map((feature, index) => (
-              <Card key={index}>
-                <CardHeader>
-                  <CardTitle>{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>{feature.description}</CardDescription>
-                </CardContent>
-              </Card>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold">
+              Everything you need to manage work
+              <span className="text-primary"> effectively</span>
+            </h2>
+            <p className="mt-4 text-gray-600 max-w-2xl mx-auto">
+              Our platform provides all the tools you need to break down, track, 
+              and complete your projects with atomic precision.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+            {features.map((feature, index) => (
+              <motion.div
+                key={index}
+                variants={itemVariants}
+                whileHover={{ y: -5 }}
+                className="relative"
+              >
+                <Card className="h-full hover:shadow-lg transition-shadow duration-300">
+                  <CardHeader>
+                    <div className="mb-4">{feature.icon}</div>
+                    <CardTitle className="text-xl">{feature.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-base">
+                      {feature.description}
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
           </div>
         </div>
       </motion.section>
 
+      {/* CTA Section */}
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={containerVariants}
+        className="py-20 bg-primary text-white"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold mb-8">
+            Ready to transform your workflow?
+          </h2>
+          <Button
+            size="lg"
+            variant="secondary"
+            className="bg-white text-primary hover:bg-gray-100"
+          >
+            Start Free Trial
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </motion.section>
+
       {/* Footer */}
-      <footer className="bg-gray-800 text-white">
+      <footer className="bg-gray-900 text-gray-300">
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
             <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider">Company</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
+                Product
+              </h3>
               <ul className="mt-4 space-y-4">
-                <li><a href="#" className="text-base text-gray-300 hover:text-white">About</a></li>
-                <li><a href="#" className="text-base text-gray-300 hover:text-white">Careers</a></li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Pricing
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider">Support</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
+                Company
+              </h3>
               <ul className="mt-4 space-y-4">
-                <li><a href="#" className="text-base text-gray-300 hover:text-white">Help Center</a></li>
-                <li><a href="#" className="text-base text-gray-300 hover:text-white">Contact Us</a></li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    About
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Careers
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider">Legal</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
+                Resources
+              </h3>
               <ul className="mt-4 space-y-4">
-                <li><a href="#" className="text-base text-gray-300 hover:text-white">Privacy</a></li>
-                <li><a href="#" className="text-base text-gray-300 hover:text-white">Terms</a></li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Blog
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Documentation
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider">Social</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
+                Legal
+              </h3>
               <ul className="mt-4 space-y-4">
-                <li><a href="#" className="text-base text-gray-300 hover:text-white">Twitter</a></li>
-                <li><a href="#" className="text-base text-gray-300 hover:text-white">LinkedIn</a></li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Privacy
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Terms
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
-          <div className="mt-8 border-t border-gray-700 pt-8 md:flex md:items-center md:justify-between">
-            <div className="flex space-x-6 md:order-2">
-              {/* Add social icons here */}
+          <div className="mt-8 border-t border-gray-800 pt-8 md:flex md:items-center md:justify-between">
+            <div className="flex space-x-6">
+              <a
+                href="#"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <Github className="h-6 w-6" />
+              </a>
+              <a
+                href="#"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <Twitter className="h-6 w-6" />
+              </a>
+              <a
+                href="#"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <Linkedin className="h-6 w-6" />
+              </a>
             </div>
-            <p className="mt-8 text-base text-gray-400 md:mt-0 md:order-1">
-              © 2024 Atomicity, Inc. All rights reserved.
+            <p className="mt-8 text-base md:mt-0">
+              © 2024 Atomicity. All rights reserved.
             </p>
           </div>
         </div>

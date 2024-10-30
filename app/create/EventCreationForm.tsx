@@ -1,42 +1,34 @@
 "use client";
 
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent, useEffect } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, Calendar as CalendarIcon, InfoIcon } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Client, Storage, ID } from "appwrite";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
-const MDPreview = dynamic(
-  () => import("@uiw/react-md-editor").then((mod) => mod.default.Markdown),
-  { ssr: false }
-);
+const MDPreview = dynamic(() => import("@uiw/react-md-editor").then((mod) => mod.default.Markdown), { ssr: false });
 
 interface EventData {
   title: string;
   subtitle: string;
   description: string;
   date: Date;
+  mode: 'online' | 'offline';
   location: string;
-  mode: string;
   time: string;
   fees: number;
   maxAllowedParticipants: number;
@@ -59,23 +51,23 @@ const BUCKET_ID = process.env.NEXT_PUBLIC_BUCKET_ID || "";
 const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT || "";
 
 const client = new Client().setEndpoint(API_ENDPOINT).setProject(PROJECT_ID);
-
 const storage = new Storage(client);
 
-const EventCreationForm: React.FC = () => {
+const EventForm = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const eventId = searchParams.get("id");
+  const isEditing = Boolean(eventId);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
   const today = new Date();
-
-  // let ownerId = user?.id
 
   const [eventData, setEventData] = useState<EventData>({
     title: "",
     subtitle: "",
     description: "",
     date: new Date(),
-    mode: "offline", // default value
+    mode: "offline",
     location: "",
     time: "",
     fees: 0,
@@ -94,49 +86,66 @@ const EventCreationForm: React.FC = () => {
     ownerId: user?.id || "",
   });
 
+  useEffect(() => {
+    const fetchEventData = async () => {
+      if (!eventId) return;
+      
+      try {
+        const response = await fetch(`/api/event/${eventId}`);
+        if (!response.ok) throw new Error('Failed to fetch event');
+        
+        const data = await response.json();
+        setEventData({
+          ...data,
+          date: new Date(data.date),
+          registrationOpenTill: new Date(data.registrationOpenTill),
+          noMaxParticipants: data.maxAllowedParticipants === -1,
+        });
+      } catch (error) {
+        console.error('Error fetching event:', error);
+        toast.error('Failed to load event data');
+      }
+    };
+
+    fetchEventData();
+  }, [eventId]);
+
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target;
-    setEventData((prev) => ({
+    setEventData((prev: EventData) => ({
       ...prev,
       [name]: type === "number" ? parseFloat(value) : value,
     }));
   };
 
-  const handleMaxParticipantsCheckbox = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleMaxParticipantsCheckbox = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
-    setEventData((prev) => ({
+    setEventData((prev: EventData) => ({
       ...prev,
       noMaxParticipants: checked,
       maxAllowedParticipants: checked ? -1 : 0,
     }));
   };
 
-  const handleSwitchChange = (name: string) => (checked: boolean) => {
-    setEventData((prev) => ({ ...prev, [name]: checked }));
+  const handleSwitchChange = (name: keyof EventData) => (checked: boolean) => {
+    setEventData((prev: EventData) => ({ ...prev, [name]: checked }));
   };
 
-  const handleDateChange = (date: Date | undefined, field: string) => {
+  const handleDateChange = (date: Date | undefined, field: keyof EventData) => {
     if (date) {
-      setEventData((prev) => ({ ...prev, [field]: date }));
+      setEventData((prev: EventData) => ({ ...prev, [field]: date }));
     }
   };
 
-  const handleFileUpload = async (
-    e: ChangeEvent<HTMLInputElement>,
-    field: string
-  ) => {
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>, field: keyof EventData) => {
     const file = e.target.files?.[0];
     if (file) {
       try {
         const response = await storage.createFile(BUCKET_ID, ID.unique(), file);
         const fileUrl = storage.getFileView(BUCKET_ID, response.$id).href;
-        setEventData((prev) => ({ ...prev, [field]: fileUrl }));
+        setEventData((prev: EventData) => ({ ...prev, [field]: fileUrl }));
       } catch (error) {
         console.error(`Error uploading ${field}:`, error);
         toast.error("Error in file upload. try again...");
@@ -146,26 +155,22 @@ const EventCreationForm: React.FC = () => {
 
   const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const tags = e.target.value.split(",").map((tag) => tag.trim());
-    setEventData((prev) => ({ ...prev, tags }));
+    setEventData((prev: EventData) => ({ ...prev, tags }));
   };
-
+  
   const handleCategoriesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const categories = e.target.value
-      .split(",")
-      .map((category) => category.trim());
-    setEventData((prev) => ({ ...prev, categories }));
+    const categories = e.target.value.split(",").map((category) => category.trim());
+    setEventData((prev: EventData) => ({ ...prev, categories }));
   };
 
   const handleAdditionalInfoChange = (value: string | undefined) => {
     if (value !== undefined) {
-      setEventData((prev) => ({ ...prev, additionalInfo: value }));
+      setEventData((prev: EventData) => ({ ...prev, additionalInfo: value }));
     }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // ownerId = user?.id;
-    console.log(user?.id);
     setIsLoading(true);
 
     try {
@@ -176,8 +181,11 @@ const EventCreationForm: React.FC = () => {
         registrationOpenTill: eventData.registrationOpenTill.toISOString(),
       };
 
-      const response = await fetch("/api/event", {
-        method: "POST",
+      const url = isEditing ? `/api/event/${eventId}` : '/api/event';
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
@@ -185,14 +193,14 @@ const EventCreationForm: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create event");
+        throw new Error(isEditing ? "Failed to update event" : "Failed to create event");
       }
 
-      const result = await response.json();
-
+      toast.success(isEditing ? "Event updated successfully!" : "Event created successfully!");
       router.push("/dashboard");
     } catch (error) {
-      console.error("Error creating event:", error);
+      console.error(isEditing ? "Error updating event:" : "Error creating event:", error);
+      toast.error(isEditing ? "Failed to update event" : "Failed to create event");
     } finally {
       setIsLoading(false);
     }
@@ -201,15 +209,15 @@ const EventCreationForm: React.FC = () => {
   return (
     <div className="grid md:grid-cols-2 gap-6 p-6 h-[calc(100vh-64px)]">
       <ScrollArea className="h-full pr-4">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="flex items-center gap-2">
-          <Link href={"/dashboard"}>
-            <ArrowLeft />
-          </Link>
-          <h2 className="text-2xl font-bold">Create Event</h2>
-        </div>
-        {/* titile */}
-        <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard">
+              <ArrowLeft />
+            </Link>
+            <h2 className="text-2xl font-bold">{isEditing ? 'Edit Event' : 'Create Event'}</h2>
+          </div>
+
+          {/* Title */}
           <div>
             <Label htmlFor="title">Title</Label>
             <Input
@@ -217,10 +225,12 @@ const EventCreationForm: React.FC = () => {
               name="title"
               value={eventData.title}
               onChange={handleInputChange}
+              placeholder="Enter event title"
+              required
             />
           </div>
 
-          {/* sub titile */}
+          {/* Subtitle */}
           <div>
             <Label htmlFor="subtitle">Subtitle</Label>
             <Input
@@ -228,38 +238,37 @@ const EventCreationForm: React.FC = () => {
               name="subtitle"
               value={eventData.subtitle}
               onChange={handleInputChange}
+              placeholder="Enter event subtitle"
             />
           </div>
 
-          {/* description */}
-          {/* <div>
+          {/* Description */}
+          <div>
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
               name="description"
               value={eventData.description}
               onChange={handleInputChange}
+              placeholder="Enter event description"
+              className="min-h-[100px]"
             />
-          </div> */}
+          </div>
 
-          {/* date */}
+          {/* Date */}
           <div>
             <Label htmlFor="date">Date</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
-                  variant={"outline"}
+                  variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal",
                     !eventData.date && "text-muted-foreground"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {eventData.date ? (
-                    format(eventData.date, "PPP")
-                  ) : (
-                    <span>Pick a date</span>
-                  )}
+                  {eventData.date ? format(eventData.date, "PPP") : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
@@ -267,20 +276,20 @@ const EventCreationForm: React.FC = () => {
                   mode="single"
                   selected={eventData.date}
                   onSelect={(date) => handleDateChange(date, "date")}
-                  disabled={(date) => date < today} // Disable past dates
+                  disabled={(date) => date < today}
                   initialFocus
                 />
               </PopoverContent>
             </Popover>
           </div>
 
-          {/* registration open till */}
+          {/* Registration Open Till */}
           <div>
             <Label htmlFor="registrationOpenTill">Registration Open Till</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
-                  variant={"outline"}
+                  variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal",
                     !eventData.registrationOpenTill && "text-muted-foreground"
@@ -298,9 +307,7 @@ const EventCreationForm: React.FC = () => {
                 <Calendar
                   mode="single"
                   selected={eventData.registrationOpenTill}
-                  onSelect={(date) =>
-                    handleDateChange(date, "registrationOpenTill")
-                  }
+                  onSelect={(date) => handleDateChange(date, "registrationOpenTill")}
                   disabled={(date) =>
                     date < today || (eventData.date && date > eventData.date)
                   }
@@ -310,9 +317,9 @@ const EventCreationForm: React.FC = () => {
             </Popover>
           </div>
 
-          {/* mode */}
+          {/* Mode */}
           <div>
-            <label htmlFor="mode">Mode of Event</label>
+            <Label htmlFor="mode">Mode of Event</Label>
             <select
               id="mode"
               name="mode"
@@ -325,10 +332,10 @@ const EventCreationForm: React.FC = () => {
             </select>
           </div>
 
-          {/* location */}
+          {/* Location */}
           <div>
-            <label htmlFor="location">Location</label>
-            <input
+            <Label htmlFor="location">Location</Label>
+            <Input
               id="location"
               name="location"
               value={eventData.location}
@@ -339,11 +346,10 @@ const EventCreationForm: React.FC = () => {
                   ? "Not required for online events"
                   : "Enter event location"
               }
-              className="w-full px-4 py-2 border rounded-md"
             />
           </div>
 
-          {/* time */}
+          {/* Time */}
           <div>
             <Label htmlFor="time">Time</Label>
             <Input
@@ -355,7 +361,7 @@ const EventCreationForm: React.FC = () => {
             />
           </div>
 
-          {/* fees */}
+          {/* Fees */}
           <div>
             <Label htmlFor="fees">Fees</Label>
             <Input
@@ -364,41 +370,40 @@ const EventCreationForm: React.FC = () => {
               type="number"
               value={eventData.fees}
               onChange={handleInputChange}
+              min="0"
             />
           </div>
 
-          {/* Maximum allowed participation */}
+          {/* Maximum Participants */}
           <div>
-            <Label htmlFor="maxParticipants">
-              Maximum Allowed Participants
-            </Label>
+            <Label htmlFor="maxAllowedParticipants">Maximum Allowed Participants</Label>
             <Input
               id="maxAllowedParticipants"
               name="maxAllowedParticipants"
               type="number"
               value={
-                eventData.noMaxParticipants === true
-                  ? ""
-                  : eventData.maxAllowedParticipants
+                eventData.noMaxParticipants ? "" : eventData.maxAllowedParticipants
               }
               onChange={handleInputChange}
               disabled={eventData.noMaxParticipants}
               placeholder={eventData.noMaxParticipants ? "No limit" : ""}
+              min="0"
             />
           </div>
 
-          {/* no max participation */}
+          {/* No Max Participants Toggle */}
           <div className="flex items-center space-x-2">
             <input
               id="noMaxParticipants"
               type="checkbox"
               checked={eventData.noMaxParticipants}
               onChange={handleMaxParticipantsCheckbox}
+              className="rounded"
             />
-            <Label htmlFor="noMaxParticipants">No maximum participation</Label>
+            <Label htmlFor="noMaxParticipants">No maximum participation limit</Label>
           </div>
 
-          {/* cover image */}
+          {/* Cover Image */}
           <div>
             <Label htmlFor="coverImg">Cover Image</Label>
             <Input
@@ -410,7 +415,7 @@ const EventCreationForm: React.FC = () => {
             />
           </div>
 
-          {/* detail image */}
+          {/* Detail Image */}
           <div>
             <Label htmlFor="detailImg">Detail Image</Label>
             <Input
@@ -422,7 +427,7 @@ const EventCreationForm: React.FC = () => {
             />
           </div>
 
-          {/* support file */}
+          {/* Support File */}
           <div>
             <Label htmlFor="supportFile">Support File</Label>
             <Input
@@ -433,7 +438,7 @@ const EventCreationForm: React.FC = () => {
             />
           </div>
 
-          {/* tags */}
+          {/* Tags */}
           <div>
             <Label htmlFor="tags">Tags (comma-separated)</Label>
             <Input
@@ -441,10 +446,11 @@ const EventCreationForm: React.FC = () => {
               name="tags"
               value={eventData.tags.join(", ")}
               onChange={handleTagsChange}
+              placeholder="e.g. workshop, technology, learning"
             />
           </div>
 
-          {/* categories */}
+          {/* Categories */}
           <div>
             <Label htmlFor="categories">Categories (comma-separated)</Label>
             <Input
@@ -452,38 +458,31 @@ const EventCreationForm: React.FC = () => {
               name="categories"
               value={eventData.categories.join(", ")}
               onChange={handleCategoriesChange}
+              placeholder="e.g. education, professional, technical"
             />
           </div>
-          {/* <div>
-            <Label htmlFor="links">Links (one per line)</Label>
-            <Textarea
-              id="links"
-              name="links"
-              value={eventData.links.join('\n')}
-              onChange={handleLinksChange}
-            />
-          </div> */}
 
-          {/* additional info */}
+          {/* Additional Info */}
           <div data-color-mode="light">
             <Label htmlFor="additionalInfo">Additional Information</Label>
             <MDEditor
               value={eventData.additionalInfo}
               onChange={handleAdditionalInfoChange}
+              preview="edit"
             />
           </div>
 
-          {/* visibility */}
+          {/* Visibility Toggle */}
           <div className="flex items-center space-x-2">
             <Switch
               id="visibility"
               checked={eventData.visibility}
               onCheckedChange={handleSwitchChange("visibility")}
             />
-            <Label htmlFor="visibility">Visibility</Label>
+            <Label htmlFor="visibility">Event Visibility</Label>
           </div>
 
-          {/* isavailable to reg */}
+          {/* Registration Availability Toggle */}
           <div className="flex items-center space-x-2">
             <Switch
               id="isAvailableToReg"
@@ -494,121 +493,135 @@ const EventCreationForm: React.FC = () => {
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Creating Event..." : "Create Event"}
+            {isLoading
+              ? isEditing
+                ? "Updating Event..."
+                : "Creating Event..."
+              : isEditing
+              ? "Update Event"
+              : "Create Event"}
           </Button>
-        </div>
-      </form>
+        </form>
       </ScrollArea>
 
-      {/* PREVIEW SECTION */}
+      {/* Preview Section */}
       <ScrollArea className="h-full pl-4">
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold">Event Preview</h2>
-        <p className="flex justify-center gap-2 items-center text-xs">
-          <InfoIcon size={15} />
-          Your changes reflect here.
-        </p>
-        <div className="rounded-lg overflow-hidden border">
-          <div className="relative h-48">
-            <img
-              src={eventData.coverImg || "/api/placeholder/1200/400"}
-              alt="Event cover"
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4 text-white">
-              <h3 className="text-2xl font-bold">
-                {eventData.title || "Event Title"}
-              </h3>
-              <p>{eventData.subtitle || "Event Subtitle"}</p>
-            </div>
-          </div>
-          <div className="p-4 space-y-4">
-            <p>
-              {eventData.description || "Event description will appear here."}
-            </p>
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>{format(eventData.date, "PPP")}</span>
-              <span>{eventData.time || "Event Time"}</span>
-            </div>
-            <p>{eventData.location || "Event Location"}</p>
-            <div className="flex justify-between">
-              <span>Fees: ₹{eventData.fees}</span>
-              <span>
-                Maximum Participants:{" "}
-                {eventData.noMaxParticipants
-                  ? "N/A"
-                  : `${eventData.maxAllowedParticipants}`}
-              </span>
-            </div>
-            <div className="flex space-x-2">
-              {eventData.visibility && (
-                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                  Visible
-                </span>
-              )}
-              {eventData.isAvailableToReg && (
-                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                  Registration Open
-                </span>
-              )}
-            </div>
-            <div>
-              <h4 className="font-semibold">Tags:</h4>
-              <div className="flex flex-wrap gap-2">
-                {eventData.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="px-2 py-1 bg-gray-100 rounded-full text-xs"
-                  >
-                    {tag}
-                  </span>
-                ))}
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold">Event Preview</h2>
+          <p className="flex justify-center gap-2 items-center text-xs">
+            <InfoIcon size={15} />
+            Your changes reflect here in real-time
+          </p>
+          <div className="rounded-lg overflow-hidden border">
+            <div className="relative h-48">
+              <img
+                src={eventData.coverImg || "/api/placeholder/1200/400"}
+                alt="Event cover"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4 text-white">
+                <h3 className="text-2xl font-bold">
+                  {eventData.title || "Event Title"}
+                </h3>
+                <p>{eventData.subtitle || "Event Subtitle"}</p>
               </div>
             </div>
-            <div>
-              <h4 className="font-semibold">Categories:</h4>
-              <div className="flex flex-wrap gap-2">
-                {eventData.categories.map((category, index) => (
-                  <span
-                    key={index}
-                    className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
-                  >
-                    {category}
-                  </span>
-                ))}
+            <div className="p-4 space-y-4">
+              <p className="text-gray-700">
+                {eventData.description || "Event description will appear here."}
+              </p>
+              
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>{format(eventData.date, "PPP")}</span>
+                <span>{eventData.time || "Event Time"}</span>
               </div>
+              
+              <div className="text-gray-700">
+                <strong>Location: </strong>
+                {eventData.location || `${eventData.mode} event`}
+              </div>
+              
+              <div className="flex justify-between text-gray-700">
+                <span>
+                  <strong>Fees: </strong>₹{eventData.fees}
+                </span>
+                <span>
+                  <strong>Maximum Participants: </strong>
+                  {eventData.noMaxParticipants
+                    ? "Unlimited"
+                    : eventData.maxAllowedParticipants}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {eventData.visibility && (
+                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                    Visible
+                  </span>
+                )}
+                {eventData.isAvailableToReg && (
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                    Registration Open
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">Tags:</h4>
+                <div className="flex flex-wrap gap-2">
+                  {eventData.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="px-2 py-1 bg-gray-100 rounded-full text-xs"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">Categories:</h4>
+                <div className="flex flex-wrap gap-2">
+                  {eventData.categories.map((category, index) => (
+                    <span
+                      key={index}
+                      className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                    >
+                      {category}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold">Registration Open Till:</h4>
+                <p>{format(eventData.registrationOpenTill, "PPP")}</p>
+              </div>
+
+              {eventData.additionalInfo && (
+                <div>
+                  <h4 className="font-semibold mb-2">Additional Information:</h4>
+                  <div className="prose prose-sm max-w-none">
+                    <MDPreview source={eventData.additionalInfo} />
+                  </div>
+                </div>
+              )}
+
+              <Button 
+                className="w-full mt-4" 
+                disabled={!eventData.isAvailableToReg}
+              >
+                {eventData.isAvailableToReg
+                  ? "Register Now"
+                  : "Registration Closed"}
+              </Button>
             </div>
-            {/* <div>
-              <h4 className="font-semibold">Links:</h4>
-              <ul className="list-disc list-inside">
-                {eventData.links.map((link, index) => (
-                  <li key={index} className="text-blue-500 hover:underline">
-                    <a href={link} target="_blank" rel="noopener noreferrer">
-                      {link}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div> */}
-            <div>
-              <h4 className="font-semibold">Registration Open Till:</h4>
-              <p>{format(eventData.registrationOpenTill, "PPP")}</p>
-            </div>
-            <div>
-              <h4 className="font-semibold">Additional Information:</h4>
-              <MDPreview source={eventData.additionalInfo} />
-            </div>
-            <Button className="w-full" disabled={!eventData.isAvailableToReg}>
-              {eventData.isAvailableToReg
-                ? "Register Now"
-                : "Registration Closed"}
-            </Button>
           </div>
         </div>
-      </div>
       </ScrollArea>
     </div>
   );
 };
 
-export default EventCreationForm;
+export default EventForm;

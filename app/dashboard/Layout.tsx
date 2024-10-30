@@ -1,12 +1,21 @@
 "use client"
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { UserButton, useUser } from '@clerk/nextjs';
-import { Home, Calendar, Users, Settings, AlertCircle, CheckCircle, Clock, Menu, X, BarChart, Club, BookUserIcon, Navigation } from 'lucide-react';
+import { Home, Calendar, Users, Settings, AlertCircle, CheckCircle, Clock, Menu, X, BarChart, Club, BookUserIcon, Navigation, ChevronLeft, ArrowLeftCircle } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+
+// Lazy load page components
+const DashboardPage = lazy(() => import('@/app/dashboard/page'));
+const ClubPage = lazy(() => import('@/app/dashboard/clubpage/page'));
+const VenuePage = lazy(() => import('@/app/dashboard/venue/page'));
+const EventsPage = lazy(() => import('@/app/dashboard/events/page'));
+const AnalyticsPage = lazy(() => import('@/app/dashboard/analytics/page'));
+const UsersPage = lazy(() => import('@/app/dashboard/users/page'));
+const SettingsPage = lazy(() => import('@/app/dashboard/settings/page'));
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -19,20 +28,20 @@ interface AdminStatus {
 
 export function Layout({ children }: LayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user } = useUser();
   const [adminStatus, setAdminStatus] = useState<AdminStatus | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const menuItems = [
-    { icon: Home, label: 'Dashboard', href: '/dashboard' },
-    { icon: Club, label: 'Club Page', href: '/dashboard/clubpage' },
-    { icon: Navigation, label: 'Venue Reservation', href: '/dashboard/venue' },
-    { icon: Calendar, label: 'Events', href: '/dashboard/events' },
-    // { icon: BookUserIcon, label: 'Attendance', href: '/dashboard/attendance' },
-    { icon: BarChart, label: 'Analytics', href: '/dashboard/analytics' },
-    // { icon: BarChart, label: 'Attendance', href: '/dashboard/attendance' },
-    { icon: Users, label: 'Users', href: '/dashboard/users' },
-    { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
+    { icon: Home, label: 'Dashboard', href: '/dashboard', component: DashboardPage },
+    { icon: Club, label: 'Club Page', href: '/dashboard/clubpage', component: ClubPage },
+    { icon: Navigation, label: 'Venue Reservation', href: '/dashboard/venue', component: VenuePage },
+    { icon: Calendar, label: 'Events', href: '/dashboard/events', component: EventsPage },
+    { icon: BarChart, label: 'Analytics', href: '/dashboard/analytics', component: AnalyticsPage },
+    { icon: Users, label: 'Members', href: '/dashboard/users', component: UsersPage },
+    { icon: Settings, label: 'Settings', href: '/dashboard/settings', component: SettingsPage },
   ];
 
   useEffect(() => {
@@ -83,33 +92,51 @@ export function Layout({ children }: LayoutProps) {
   };
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const toggleSidebarCollapse = () => setSidebarCollapsed(!isSidebarCollapsed);
 
   const Sidebar = () => (
-    <aside className={`bg-white shadow-md flex flex-col fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 md:w-64`}>
-      <div className="p-4 flex flex-col items-center">
-        <h1 className="text-2xl font-thin border-[1px] border-purple-500 bg-purple-200 px-1 rounded-xl">Atomi<span className='font-semibold'>City</span></h1>
-        {renderAdminStatusBadge()}
+    <aside 
+      className={`bg-white shadow-md flex flex-col fixed inset-y-0 left-0 z-50 transition-all duration-300 ease-in-out
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${isSidebarCollapsed ? 'w-16 md:w-16' : 'w-64'}
+        md:relative md:translate-x-0`}
+    >
+      <div className="p-4 flex flex-col items-center relative">
+        {!isSidebarCollapsed && (
+          <h1 className="text-2xl font-thin border-[1px] border-purple-500 bg-purple-200 px-1 rounded-xl">
+            Atomi<span className='font-semibold'>City</span>
+          </h1>
+        )}
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="absolute right-2 top-4"
+          onClick={toggleSidebarCollapse}
+        >
+          <ChevronLeft className={`h-4 w-4 transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''}`} />
+        </Button>
+        {!isSidebarCollapsed && renderAdminStatusBadge()}
       </div>
       <nav className="mt-6 flex-grow">
         {menuItems.map((item) => {
           const isActive = pathname === item.href || 
-                           (item.href !== '/dashboard' && pathname?.startsWith(item.href));
+                         (item.href !== '/dashboard' && pathname?.startsWith(item.href));
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center px-4 py-2 mt-2 text-gray-600 hover:bg-gray-200 transition-colors duration-200 ${
-                isActive ? 'bg-purple-100 text-purple-700 font-medium' : ''
-              }`}
+              className={`flex items-center px-4 py-2 mt-2 text-gray-600 hover:bg-gray-200 transition-colors duration-200 
+                ${isActive ? 'bg-purple-100 text-purple-700 font-medium' : ''}
+                ${isSidebarCollapsed ? 'justify-center' : ''}`}
               onClick={() => setIsSidebarOpen(false)}
             >
-              <item.icon className={`w-5 h-5 mr-2 ${isActive ? 'text-purple-700' : ''}`} />
-              {item.label}
+              <item.icon className={`w-5 h-5 ${isActive ? 'text-purple-700' : ''} ${!isSidebarCollapsed ? 'mr-2' : ''}`} />
+              {!isSidebarCollapsed && item.label}
             </Link>
           );
         })}
       </nav>
-      <div className="p-4">
+      <div className={`p-4 ${isSidebarCollapsed ? 'flex justify-center' : ''}`}>
         <UserButton/>
       </div>
     </aside>
@@ -119,15 +146,35 @@ export function Layout({ children }: LayoutProps) {
     <div className="flex h-screen bg-gray-100">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white shadow-sm p-4 flex justify-between items-center md:hidden">
-          <Button variant="ghost" size="icon" onClick={toggleSidebar}>
-            {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </Button>
-          <h1 className="text-2xl font-thin border-[1px] border-purple-500 bg-purple-200 px-1 rounded-xl">Atomi<span className='font-semibold'>City</span></h1>
-          <UserButton/>
+        <header className="bg-white shadow-sm p-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="md:hidden"
+              onClick={toggleSidebar}
+            >
+              {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
+            
+          </div>
+          <div className="md:hidden">
+            <h1 className="text-2xl font-thin border-[1px] border-purple-500 bg-purple-200 px-1 rounded-xl">
+              Atomi<span className='font-semibold'>City</span>
+            </h1>
+          </div>
+          <div className="md:hidden">
+            <UserButton/>
+          </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          {children}
+          <Suspense fallback={
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-700"></div>
+            </div>
+          }>
+            {children}
+          </Suspense>
         </main>
       </div>
     </div>
